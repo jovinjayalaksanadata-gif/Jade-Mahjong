@@ -1,0 +1,779 @@
+<title>Jade Mahjong Score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@700&display=swap">
+<style>
+/* Layout: one working column — scoreboard (2×2 seats) on top, hand entry card, payment preview, then history. Jade felt + ivory tiles + gold trim, same as the Jade Mahjong books. */
+:root{
+  --bg:#f3efe3; --card:#fffdf7; --ink:#1f2620; --mut:#63675d; --line:#ddd4bd;
+  --jade:#145a43; --jade-d:#0d3f2f; --jade-soft:#e3efe8; --gold:#a8832f; --gold-tx:#86671f;
+  --win:#1b7a4c; --lose:#b23a2a; --chip:#f6f1e3;
+  --disp:'Cormorant Garamond',Georgia,serif; --body:'IBM Plex Sans',system-ui,sans-serif; --cjk:'Noto Serif TC','Noto Serif CJK TC',serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1a15; --card:#13251e; --ink:#ece6d6; --mut:#a4ad9f; --line:#2a4036;
+  --jade:#4fb48a; --jade-d:#8fd6b5; --jade-soft:#18382c; --gold:#d2ae5c; --gold-tx:#d9b968;
+  --win:#5fd39a; --lose:#f08a78; --chip:#1a3027; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1a15; --card:#13251e; --ink:#ece6d6; --mut:#a4ad9f; --line:#2a4036;
+  --jade:#4fb48a; --jade-d:#8fd6b5; --jade-soft:#18382c; --gold:#d2ae5c; --gold-tx:#d9b968;
+  --win:#5fd39a; --lose:#f08a78; --chip:#1a3027; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:18px 48px;display:grid;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 18px}
+.brand small{display:block;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-tx);font-weight:600}
+.brand h1{font-family:var(--disp);font-size:34px;line-height:1.05;margin:2px 0 0;color:var(--jade-d);text-wrap:balance}
+.variants{display:flex;flex-wrap:wrap;gap:6px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.pill{border:1.5px solid var(--line);background:var(--card);border-radius:99px;padding:6px 13px;font-weight:600;font-size:14px}
+.pill[aria-pressed="true"]{background:var(--jade);border-color:var(--jade);color:var(--card)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+h2{font-family:var(--disp);font-size:25px;margin:0;color:var(--jade-d);line-height:1.1}
+.label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-tx);font-weight:600;margin:0 0 6px}
+.num{font-variant-numeric:tabular-nums}
+
+/* scoreboard */
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.seat{position:relative;padding:12px 12px 10px}
+.seat.dealer{border-color:var(--jade);box-shadow:0 0 0 2px var(--jade-soft)}
+.seat-top{display:flex;align-items:center;gap:8px}
+.wind{font-family:var(--cjk);font-weight:700;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--jade-soft);color:var(--jade-d);flex:none;font-size:17px}
+.seat input{min-width:0;width:100%;border:0;border-bottom:1.5px dashed var(--line);background:transparent;font:600 15px var(--body);color:var(--ink);padding:3px 0}
+.total{font-family:var(--body);font-weight:700;font-size:28px;margin-top:8px;letter-spacing:-.01em}
+.total.pos{color:var(--win)} .total.neg{color:var(--lose)}
+.badge{position:absolute;top:-9px;right:10px;background:var(--jade);color:var(--card);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:2px 7px}
+.seat .mini{margin-top:6px;font-size:12.5px;padding:4px 9px}
+.board-foot{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-top:10px;font-size:13.5px;color:var(--mut)}
+.board-foot select{font:inherit;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:3px 6px}
+
+/* entry */
+.entry{display:grid;gap:16px}
+.row{display:grid;gap:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1.5px solid var(--line);background:var(--chip);border-radius:10px;padding:8px 12px;font-weight:600;font-size:14px;min-width:0}
+.opt[aria-pressed="true"]{background:var(--jade);border-color:var(--jade);color:var(--card)}
+.opt[disabled]{opacity:.35;cursor:not-allowed}
+.items{display:flex;flex-wrap:wrap;gap:6px}
+.item{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--chip);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:500}
+.item b{color:var(--gold-tx);font-weight:700}
+.item[aria-pressed="true"]{border-color:var(--jade);background:var(--jade-soft);color:var(--jade-d)}
+.item.auto{border-style:dashed;cursor:default}
+.counter{display:inline-flex;align-items:center;gap:2px;border:1.5px solid var(--line);background:var(--chip);border-radius:10px;padding:3px 4px 3px 10px;font-size:14px}
+.counter.on{border-color:var(--jade);background:var(--jade-soft)}
+.counter span{margin-right:6px}
+.counter button{width:28px;height:28px;border-radius:7px;border:0;background:var(--card);font-weight:700;font-size:16px;color:var(--jade-d)}
+.counter output{min-width:20px;text-align:center;font-weight:700}
+.stepper{display:inline-flex;align-items:center;gap:6px}
+.stepper button{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:var(--chip);font-size:20px;font-weight:700;color:var(--jade-d)}
+.stepper input{width:84px;text-align:center;font:700 22px var(--body);border:1.5px solid var(--line);border-radius:10px;padding:5px;background:var(--card);color:var(--ink)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:620px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;background:var(--jade-soft);border-radius:14px;padding:14px 16px}
+@media (max-width:620px){.result{grid-template-columns:minmax(0,1fr)}}
+.value{font-family:var(--disp);font-size:40px;font-weight:700;color:var(--jade-d);line-height:1}
+.value small{font-family:var(--body);font-size:14px;font-weight:600;color:var(--mut);margin-left:6px}
+.calc{font-size:13.5px;color:var(--mut);margin-top:6px}
+.pays{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+@media (max-width:620px){.pays{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pay{background:var(--card);border-radius:10px;padding:7px 10px;min-width:0}
+.pay span{display:block;font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pay b{font-size:18px}
+.pos{color:var(--win)} .neg{color:var(--lose)}
+.warn{border-left:4px solid var(--lose);background:var(--chip);border-radius:8px;padding:8px 12px;font-size:14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.primary{background:var(--jade);color:var(--card);border:0;border-radius:12px;padding:12px 20px;font-weight:700;font-size:16px}
+.primary[disabled]{opacity:.4;cursor:not-allowed}
+.ghost{background:transparent;border:1.5px solid var(--line);border-radius:12px;padding:11px 16px;font-weight:600}
+details{border-top:1.5px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600;color:var(--jade-d)}
+.settings{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:10px;font-size:14px}
+.settings label{display:inline-flex;align-items:center;gap:6px}
+.settings input[type=number]{width:80px;font:inherit;border:1.5px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--card);color:var(--ink)}
+.settings select{font:inherit;border:1.5px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--card);color:var(--ink)}
+
+/* history */
+.hist{display:grid;gap:6px;margin-top:10px}
+.h{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.h .n{font-family:var(--disp);font-size:22px;color:var(--gold-tx);font-weight:700;text-align:center}
+.h p{margin:0}
+.h .d{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13.5px;margin-top:2px}
+.empty{color:var(--mut);font-size:14px;margin-top:8px}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--chip);border-radius:10px;padding:8px 12px;font-size:14px}
+.note{font-size:12.5px;color:var(--mut);text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><small>Jade Mahjong · Penghitung Skor</small><h1 id="vtitle">Hong Kong</h1></div>
+    <nav class="variants" id="variants" aria-label="Pilih varian"></nav>
+  </header>
+
+  <section class="card" aria-labelledby="sb">
+    <p class="label" id="sb">Skor berjalan</p>
+    <div class="board" id="board"></div>
+    <div class="board-foot" id="boardfoot"></div>
+  </section>
+
+  <section class="card entry" aria-labelledby="eh">
+    <h2 id="eh">Catat tangan</h2>
+    <div id="entry" class="entry"></div>
+  </section>
+
+  <section class="card" aria-labelledby="hh">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px">
+      <h2 id="hh">Riwayat</h2>
+      <div class="actions"><button class="ghost" id="undo">Batalkan terakhir</button><button class="ghost" id="newgame">Permainan baru</button></div>
+    </div>
+    <div id="confirmbox"></div>
+    <div class="hist" id="hist"></div>
+  </section>
+  <p class="note">Poin hanya untuk skor permainan, bukan taruhan. Data tersimpan di perangkat ini saja.</p>
+</div>
+
+<style>
+/* tile entry */
+.tl{display:inline-flex;border-radius:7px;line-height:0}
+.tl svg{width:30px;height:41px}
+.tl.win{box-shadow:0 0 0 3px var(--gold);background:var(--gold)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.slot{border:1.5px dashed var(--line);border-radius:12px;padding:8px;display:grid;gap:6px;cursor:pointer;background:var(--card);min-width:0}
+.slot.active{border:2px solid var(--jade);background:var(--jade-soft)}
+.slot.filled{border-style:solid}
+.slot-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--mut)}
+.slot-t{display:flex;gap:2px;min-height:41px;align-items:center;flex-wrap:wrap}
+.slot-t em{font-style:normal;font-size:13px;color:var(--mut)}
+.tiny{border:1.5px solid var(--line);background:var(--chip);border-radius:7px;padding:2px 7px;font-size:12px;font-weight:600}
+.tiny[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.pal{display:grid;gap:6px}
+.pal-row{display:flex;flex-wrap:wrap;gap:3px}
+.pal button{border:0;background:transparent;padding:0;border-radius:7px;line-height:0}
+.pal button svg{width:34px;height:47px}
+.pal button[disabled]{opacity:.25;cursor:not-allowed}
+.chooser{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--chip);border:1.5px solid var(--gold);border-radius:12px;padding:8px 10px}
+.chooser button{display:inline-flex;align-items:center;gap:2px;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:4px 8px 4px 4px;font-size:13px;font-weight:600}
+.chooser button .tl svg{width:24px;height:33px}
+.status{font-size:14px;font-weight:600;color:var(--jade-d)}
+.found{display:flex;flex-wrap:wrap;gap:6px}
+.found span{background:var(--jade-soft);color:var(--jade-d);border-radius:9px;padding:5px 10px;font-size:14px;font-weight:600}
+.found span b{color:var(--gold-tx);margin-left:4px}
+.found span.off{background:var(--chip);color:var(--mut);text-decoration:line-through;font-weight:500}
+.ctx{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.info{font-size:13.5px;color:var(--mut)}
+.nw{white-space:nowrap}
+</style>
+<script>(() => {
+const TILES = {"1m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"1 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u4e00</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "2m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"2 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u4e8c</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "3m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"3 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u4e09</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "4m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"4 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u56db</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "5m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"5 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u4e94</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "6m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"6 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u516d</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "7m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"7 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u4e03</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "8m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"8 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u516b</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "9m": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"9 Karakter\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"36\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"28\" fill=\"#23324c\">\u4e5d</text><text x=\"30\" y=\"66\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"25\" fill=\"#a62f20\">\u842c</text></svg>", "1p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"1 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"30\" cy=\"39\" r=\"17\" fill=\"#24548c\"/><circle cx=\"30\" cy=\"39\" r=\"11.56\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"7.14\" fill=\"#24548c\"/><circle cx=\"30\" cy=\"39\" r=\"14.62\" fill=\"none\" stroke=\"#fdfaf1\" stroke-width=\"1\"/><circle cx=\"30\" cy=\"39\" r=\"4.59\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"2.55\" fill=\"#a62f20\"/><circle cx=\"39.35\" cy=\"39.00\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"36.61\" cy=\"45.61\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"30.00\" cy=\"48.35\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"23.39\" cy=\"45.61\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"20.65\" cy=\"39.00\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"23.39\" cy=\"32.39\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"30.00\" cy=\"29.65\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"36.61\" cy=\"32.39\" r=\"1.02\" fill=\"#fdfaf1\"/></svg>", "2p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"2 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"30\" cy=\"22\" r=\"8.6\" fill=\"#1d6b45\"/><circle cx=\"30\" cy=\"22\" r=\"5.85\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"22\" r=\"3.61\" fill=\"#1d6b45\"/><circle cx=\"30\" cy=\"22\" r=\"1.38\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"56\" r=\"8.6\" fill=\"#24548c\"/><circle cx=\"30\" cy=\"56\" r=\"5.85\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"56\" r=\"3.61\" fill=\"#24548c\"/><circle cx=\"30\" cy=\"56\" r=\"1.38\" fill=\"#fdfaf1\"/></svg>", "3p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"3 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"15\" cy=\"18\" r=\"8\" fill=\"#24548c\"/><circle cx=\"15\" cy=\"18\" r=\"5.44\" fill=\"#fdfaf1\"/><circle cx=\"15\" cy=\"18\" r=\"3.36\" fill=\"#24548c\"/><circle cx=\"15\" cy=\"18\" r=\"1.28\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"8\" fill=\"#a62f20\"/><circle cx=\"30\" cy=\"39\" r=\"5.44\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"3.36\" fill=\"#a62f20\"/><circle cx=\"30\" cy=\"39\" r=\"1.28\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"60\" r=\"8\" fill=\"#1d6b45\"/><circle cx=\"45\" cy=\"60\" r=\"5.44\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"60\" r=\"3.36\" fill=\"#1d6b45\"/><circle cx=\"45\" cy=\"60\" r=\"1.28\" fill=\"#fdfaf1\"/></svg>", "4p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"4 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"18\" cy=\"22\" r=\"8.2\" fill=\"#24548c\"/><circle cx=\"18\" cy=\"22\" r=\"5.58\" fill=\"#fdfaf1\"/><circle cx=\"18\" cy=\"22\" r=\"3.44\" fill=\"#24548c\"/><circle cx=\"18\" cy=\"22\" r=\"1.31\" fill=\"#fdfaf1\"/><circle cx=\"42\" cy=\"22\" r=\"8.2\" fill=\"#1d6b45\"/><circle cx=\"42\" cy=\"22\" r=\"5.58\" fill=\"#fdfaf1\"/><circle cx=\"42\" cy=\"22\" r=\"3.44\" fill=\"#1d6b45\"/><circle cx=\"42\" cy=\"22\" r=\"1.31\" fill=\"#fdfaf1\"/><circle cx=\"18\" cy=\"56\" r=\"8.2\" fill=\"#1d6b45\"/><circle cx=\"18\" cy=\"56\" r=\"5.58\" fill=\"#fdfaf1\"/><circle cx=\"18\" cy=\"56\" r=\"3.44\" fill=\"#1d6b45\"/><circle cx=\"18\" cy=\"56\" r=\"1.31\" fill=\"#fdfaf1\"/><circle cx=\"42\" cy=\"56\" r=\"8.2\" fill=\"#24548c\"/><circle cx=\"42\" cy=\"56\" r=\"5.58\" fill=\"#fdfaf1\"/><circle cx=\"42\" cy=\"56\" r=\"3.44\" fill=\"#24548c\"/><circle cx=\"42\" cy=\"56\" r=\"1.31\" fill=\"#fdfaf1\"/></svg>", "5p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"5 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"16\" cy=\"18\" r=\"7.6\" fill=\"#24548c\"/><circle cx=\"16\" cy=\"18\" r=\"5.17\" fill=\"#fdfaf1\"/><circle cx=\"16\" cy=\"18\" r=\"3.19\" fill=\"#24548c\"/><circle cx=\"16\" cy=\"18\" r=\"1.22\" fill=\"#fdfaf1\"/><circle cx=\"44\" cy=\"18\" r=\"7.6\" fill=\"#1d6b45\"/><circle cx=\"44\" cy=\"18\" r=\"5.17\" fill=\"#fdfaf1\"/><circle cx=\"44\" cy=\"18\" r=\"3.19\" fill=\"#1d6b45\"/><circle cx=\"44\" cy=\"18\" r=\"1.22\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"7.6\" fill=\"#a62f20\"/><circle cx=\"30\" cy=\"39\" r=\"5.17\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"3.19\" fill=\"#a62f20\"/><circle cx=\"30\" cy=\"39\" r=\"1.22\" fill=\"#fdfaf1\"/><circle cx=\"16\" cy=\"60\" r=\"7.6\" fill=\"#1d6b45\"/><circle cx=\"16\" cy=\"60\" r=\"5.17\" fill=\"#fdfaf1\"/><circle cx=\"16\" cy=\"60\" r=\"3.19\" fill=\"#1d6b45\"/><circle cx=\"16\" cy=\"60\" r=\"1.22\" fill=\"#fdfaf1\"/><circle cx=\"44\" cy=\"60\" r=\"7.6\" fill=\"#24548c\"/><circle cx=\"44\" cy=\"60\" r=\"5.17\" fill=\"#fdfaf1\"/><circle cx=\"44\" cy=\"60\" r=\"3.19\" fill=\"#24548c\"/><circle cx=\"44\" cy=\"60\" r=\"1.22\" fill=\"#fdfaf1\"/></svg>", "6p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"6 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"19\" cy=\"18\" r=\"7\" fill=\"#1d6b45\"/><circle cx=\"19\" cy=\"18\" r=\"4.76\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"18\" r=\"2.94\" fill=\"#1d6b45\"/><circle cx=\"19\" cy=\"18\" r=\"1.12\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"18\" r=\"7\" fill=\"#1d6b45\"/><circle cx=\"41\" cy=\"18\" r=\"4.76\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"18\" r=\"2.94\" fill=\"#1d6b45\"/><circle cx=\"41\" cy=\"18\" r=\"1.12\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"40\" r=\"7\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"40\" r=\"4.76\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"40\" r=\"2.94\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"40\" r=\"1.12\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"40\" r=\"7\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"40\" r=\"4.76\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"40\" r=\"2.94\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"40\" r=\"1.12\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"60\" r=\"7\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"60\" r=\"4.76\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"60\" r=\"2.94\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"60\" r=\"1.12\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"60\" r=\"7\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"60\" r=\"4.76\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"60\" r=\"2.94\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"60\" r=\"1.12\" fill=\"#fdfaf1\"/></svg>", "7p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"7 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"14\" cy=\"14\" r=\"5.8\" fill=\"#1d6b45\"/><circle cx=\"14\" cy=\"14\" r=\"3.94\" fill=\"#fdfaf1\"/><circle cx=\"14\" cy=\"14\" r=\"2.44\" fill=\"#1d6b45\"/><circle cx=\"14\" cy=\"14\" r=\"0.93\" fill=\"#fdfaf1\"/><circle cx=\"27\" cy=\"20\" r=\"5.8\" fill=\"#1d6b45\"/><circle cx=\"27\" cy=\"20\" r=\"3.94\" fill=\"#fdfaf1\"/><circle cx=\"27\" cy=\"20\" r=\"2.44\" fill=\"#1d6b45\"/><circle cx=\"27\" cy=\"20\" r=\"0.93\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"26\" r=\"5.8\" fill=\"#1d6b45\"/><circle cx=\"40\" cy=\"26\" r=\"3.94\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"26\" r=\"2.44\" fill=\"#1d6b45\"/><circle cx=\"40\" cy=\"26\" r=\"0.93\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"46\" r=\"6.4\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"46\" r=\"4.35\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"46\" r=\"2.69\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"46\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"46\" r=\"6.4\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"46\" r=\"4.35\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"46\" r=\"2.69\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"46\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"62\" r=\"6.4\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"62\" r=\"4.35\" fill=\"#fdfaf1\"/><circle cx=\"19\" cy=\"62\" r=\"2.69\" fill=\"#a62f20\"/><circle cx=\"19\" cy=\"62\" r=\"1.02\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"62\" r=\"6.4\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"62\" r=\"4.35\" fill=\"#fdfaf1\"/><circle cx=\"41\" cy=\"62\" r=\"2.69\" fill=\"#a62f20\"/><circle cx=\"41\" cy=\"62\" r=\"1.02\" fill=\"#fdfaf1\"/></svg>", "8p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"8 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"20\" cy=\"13\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"13\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"13\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"13\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"13\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"13\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"13\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"13\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"30\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"30\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"30\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"30\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"30\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"30\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"30\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"30\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"47\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"47\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"47\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"47\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"47\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"47\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"47\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"47\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"64\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"64\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"20\" cy=\"64\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"20\" cy=\"64\" r=\"0.94\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"64\" r=\"5.9\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"64\" r=\"4.01\" fill=\"#fdfaf1\"/><circle cx=\"40\" cy=\"64\" r=\"2.48\" fill=\"#24548c\"/><circle cx=\"40\" cy=\"64\" r=\"0.94\" fill=\"#fdfaf1\"/></svg>", "9p": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"9 Dots\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><circle cx=\"15\" cy=\"18\" r=\"6.5\" fill=\"#1d6b45\"/><circle cx=\"15\" cy=\"18\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"15\" cy=\"18\" r=\"2.73\" fill=\"#1d6b45\"/><circle cx=\"15\" cy=\"18\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"18\" r=\"6.5\" fill=\"#1d6b45\"/><circle cx=\"30\" cy=\"18\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"18\" r=\"2.73\" fill=\"#1d6b45\"/><circle cx=\"30\" cy=\"18\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"18\" r=\"6.5\" fill=\"#1d6b45\"/><circle cx=\"45\" cy=\"18\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"18\" r=\"2.73\" fill=\"#1d6b45\"/><circle cx=\"45\" cy=\"18\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"15\" cy=\"39\" r=\"6.5\" fill=\"#a62f20\"/><circle cx=\"15\" cy=\"39\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"15\" cy=\"39\" r=\"2.73\" fill=\"#a62f20\"/><circle cx=\"15\" cy=\"39\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"6.5\" fill=\"#a62f20\"/><circle cx=\"30\" cy=\"39\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"39\" r=\"2.73\" fill=\"#a62f20\"/><circle cx=\"30\" cy=\"39\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"39\" r=\"6.5\" fill=\"#a62f20\"/><circle cx=\"45\" cy=\"39\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"39\" r=\"2.73\" fill=\"#a62f20\"/><circle cx=\"45\" cy=\"39\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"15\" cy=\"60\" r=\"6.5\" fill=\"#24548c\"/><circle cx=\"15\" cy=\"60\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"15\" cy=\"60\" r=\"2.73\" fill=\"#24548c\"/><circle cx=\"15\" cy=\"60\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"60\" r=\"6.5\" fill=\"#24548c\"/><circle cx=\"30\" cy=\"60\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"30\" cy=\"60\" r=\"2.73\" fill=\"#24548c\"/><circle cx=\"30\" cy=\"60\" r=\"1.04\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"60\" r=\"6.5\" fill=\"#24548c\"/><circle cx=\"45\" cy=\"60\" r=\"4.42\" fill=\"#fdfaf1\"/><circle cx=\"45\" cy=\"60\" r=\"2.73\" fill=\"#24548c\"/><circle cx=\"45\" cy=\"60\" r=\"1.04\" fill=\"#fdfaf1\"/></svg>", "1s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"1 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><path d=\"M27 44 C17 50 11 60 9 70 C15 64 20 60 27 56 Z\" fill=\"#1d6b45\"/><path d=\"M29 46 C24 56 22 64 22 72 C26 66 29 60 32 54 Z\" fill=\"#24548c\"/><path d=\"M31 46 C31 56 32 64 35 71 C36 63 36 56 35 50 Z\" fill=\"#1d6b45\"/><circle cx=\"11.5\" cy=\"66\" r=\"2.2\" fill=\"#a62f20\"/><circle cx=\"23\" cy=\"68\" r=\"2\" fill=\"#a62f20\"/><circle cx=\"34\" cy=\"67\" r=\"1.9\" fill=\"#a62f20\"/><path d=\"M24 40 C22 30 28 22 36 22 C44 22 48 29 46 37 C44 45 36 50 29 48 C26 47 24.5 44 24 40 Z\" fill=\"#1d6b45\"/><path d=\"M30 33 C34 28 42 29 43 35 C40 41 33 43 29 40 Z\" fill=\"#24548c\"/><path d=\"M32 35 C35 33 39 33 41 35\" stroke=\"#fdfaf1\" stroke-width=\".9\" fill=\"none\"/><path d=\"M31 38 C34 36.5 38 36.5 40 38\" stroke=\"#fdfaf1\" stroke-width=\".9\" fill=\"none\"/><path d=\"M38 24 C38 18 40 13 45 12 C49 11.5 51 14 50 17 C49 20 45 21 43 25 Z\" fill=\"#1d6b45\"/><circle cx=\"46.5\" cy=\"15\" r=\"1.4\" fill=\"#fdfaf1\"/><circle cx=\"46.8\" cy=\"15\" r=\".7\" fill=\"#23324c\"/><path d=\"M50 15 L55 16.4 L50 17.6 Z\" fill=\"#a62f20\"/><path d=\"M44 12 C43 8 45 6 47 5.5 M46 11.6 C46.5 8 48.5 7 50 7\" stroke=\"#a62f20\" stroke-width=\"1.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M33 48 L32 56 M38 47 L38.5 56\" stroke=\"#a62f20\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><path d=\"M26 57 L46 56\" stroke=\"#5a4a2a\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>", "2s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"2 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"26.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "3s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"3 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"26.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"15.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"15.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"15.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"15.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"15.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"17.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"37.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"37.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"37.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"37.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"37.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"39.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "4s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"4 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"16.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"16.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"16.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"16.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"16.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"18.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"36.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"36.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"36.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"36.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"36.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"38.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"16.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"16.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"16.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"16.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"16.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"18.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"36.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"36.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"36.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"36.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"36.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"38.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "5s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"5 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"13.80\" y=\"10.00\" width=\"6.4\" height=\"22\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"13.30\" y=\"16.36\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"13.30\" y=\"23.84\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"13.00\" y=\"9.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"13.00\" y=\"30.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"15.10\" y=\"12.20\" width=\"1.3\" height=\"17.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"39.80\" y=\"10.00\" width=\"6.4\" height=\"22\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"39.30\" y=\"16.36\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"39.30\" y=\"23.84\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"39.00\" y=\"9.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"39.00\" y=\"30.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"41.10\" y=\"12.20\" width=\"1.3\" height=\"17.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"28.00\" width=\"6.4\" height=\"22\" rx=\"2.6\" fill=\"#a62f20\"/><rect x=\"26.30\" y=\"34.36\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.30\" y=\"41.84\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"27.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"48.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"28.10\" y=\"30.20\" width=\"1.3\" height=\"17.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"13.80\" y=\"46.00\" width=\"6.4\" height=\"22\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"13.30\" y=\"52.36\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"13.30\" y=\"59.84\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"13.00\" y=\"45.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"13.00\" y=\"66.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"15.10\" y=\"48.20\" width=\"1.3\" height=\"17.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"39.80\" y=\"46.00\" width=\"6.4\" height=\"22\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"39.30\" y=\"52.36\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"39.30\" y=\"59.84\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"39.00\" y=\"45.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"39.00\" y=\"66.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"41.10\" y=\"48.20\" width=\"1.3\" height=\"17.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "6s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"6 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"12.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"12.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "7s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"7 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"26.80\" y=\"7.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#a62f20\"/><rect x=\"26.30\" y=\"12.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.30\" y=\"17.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"6.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"22.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"28.10\" y=\"9.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"12.80\" y=\"30.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"35.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"40.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"29.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"45.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"32.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"30.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"35.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"40.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"29.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"45.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"32.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"30.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"35.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"40.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"29.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"45.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"32.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"12.80\" y=\"51.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"56.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"61.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"50.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"66.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"53.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"51.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"26.30\" y=\"56.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.30\" y=\"61.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"50.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"26.00\" y=\"66.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"28.10\" y=\"53.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"51.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"56.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"61.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"50.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"66.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"53.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "8s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"8 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"9.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"9.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"9.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"9.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"9.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"11.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"21.10\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"20.60\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"20.60\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"20.30\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"20.30\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"22.40\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"32.50\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"32.00\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"32.00\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"31.70\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"31.70\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"33.80\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"43.80\" y=\"11.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"43.30\" y=\"18.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"43.30\" y=\"26.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"43.00\" y=\"10.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"43.00\" y=\"33.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"45.10\" y=\"13.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"9.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"9.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"9.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"9.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"9.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"11.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"21.10\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"20.60\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"20.60\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"20.30\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"20.30\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"22.40\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"32.50\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"32.00\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"32.00\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"31.70\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"31.70\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"33.80\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"43.80\" y=\"43.00\" width=\"6.4\" height=\"24\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"43.30\" y=\"50.02\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"43.30\" y=\"58.18\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"43.00\" y=\"42.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"43.00\" y=\"65.40\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"45.10\" y=\"45.20\" width=\"1.3\" height=\"19.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "9s": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"9 Bamboo\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"12.80\" y=\"8.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"13.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"18.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"7.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"23.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"10.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"8.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#a62f20\"/><rect x=\"26.30\" y=\"13.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.30\" y=\"18.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"7.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"23.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"28.10\" y=\"10.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"8.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"13.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"18.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"7.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"23.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"10.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"12.80\" y=\"30.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"35.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"40.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"29.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"45.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"32.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"30.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#a62f20\"/><rect x=\"26.30\" y=\"35.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.30\" y=\"40.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"29.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"45.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"28.10\" y=\"32.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"30.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"35.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"40.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"29.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"45.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"32.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"12.80\" y=\"52.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"12.30\" y=\"57.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.30\" y=\"62.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"51.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"12.00\" y=\"67.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"14.10\" y=\"54.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"26.80\" y=\"52.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#a62f20\"/><rect x=\"26.30\" y=\"57.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.30\" y=\"62.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"51.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"26.00\" y=\"67.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#7a2117\"/><rect x=\"28.10\" y=\"54.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/><rect x=\"40.80\" y=\"52.50\" width=\"6.4\" height=\"17\" rx=\"2.6\" fill=\"#1d6b45\"/><rect x=\"40.30\" y=\"57.21\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.30\" y=\"62.99\" width=\"7.4\" height=\"1.8\" rx=\"0.9\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"51.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"40.00\" y=\"67.90\" width=\"8.0\" height=\"2.2\" rx=\"1.1\" fill=\"#154d32\"/><rect x=\"42.10\" y=\"54.70\" width=\"1.3\" height=\"12.60\" rx=\"0.6\" fill=\"#ffffff\" opacity=\".35\"/></svg>", "E": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Angin Timur\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"53\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"40\" fill=\"#23324c\">\u6771</text></svg>", "S": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Angin Selatan\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"53\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"40\" fill=\"#23324c\">\u5357</text></svg>", "W": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Angin Barat\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"53\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"40\" fill=\"#23324c\">\u897f</text></svg>", "N": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Angin Utara\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"53\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"40\" fill=\"#23324c\">\u5317</text></svg>", "C": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Naga Merah\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"53\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"40\" fill=\"#a62f20\">\u4e2d</text></svg>", "F": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Naga Hijau\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><text x=\"30\" y=\"53\" text-anchor=\"middle\" font-family=\"Noto Serif CJK TC, Noto Serif TC, serif\" font-weight=\"700\" font-size=\"40\" fill=\"#1d6b45\">\u767c</text></svg>", "P": "<svg class=\"t\" viewBox=\"0 0 60 82\" role=\"img\" aria-label=\"Naga Putih\"><rect x=\"1\" y=\"1\" width=\"58\" height=\"80\" rx=\"7.5\" fill=\"#cfc3a2\" stroke=\"#b8ab86\"/><rect x=\"1\" y=\"1\" width=\"58\" height=\"75\" rx=\"7.5\" fill=\"#efe7d3\" stroke=\"#c4b896\"/><rect x=\"3.2\" y=\"3.2\" width=\"53.6\" height=\"70\" rx=\"5.6\" fill=\"#fdfaf1\" stroke=\"#e6ddc4\"/><rect x=\"15\" y=\"15\" width=\"30\" height=\"47\" rx=\"2.5\" fill=\"none\" stroke=\"#24548c\" stroke-width=\"2.8\"/><rect x=\"19.5\" y=\"19.5\" width=\"21\" height=\"38\" rx=\"1.2\" fill=\"none\" stroke=\"#24548c\" stroke-width=\"1\" opacity=\".5\"/></svg>"};
+const WINDS = ['東','南','西','北'], WCODE = 'ESWN', WNAME = ['Timur','Selatan','Barat','Utara'];
+const VARIANTS = {
+  hk:{name:'Hong Kong', unit:'faan'}, riichi:{name:'Riichi', unit:'han'}, tw:{name:'Taiwan', unit:'tai'},
+  mcr:{name:'MCR', unit:'poin'}, sg:{name:'Singapura', unit:'tai'}, am:{name:'American', unit:'poin'}
+};
+const TILE_MODE = ['hk','tw','sg'];
+const FUS = [20,25,30,40,50,60,70,80,90,100,110];
+const isHon = c => c.length === 1;
+const rk = c => +c[0], st = c => c[1];
+const isDragon = c => 'CFP'.includes(c) && c.length === 1, isWind = c => 'ESWN'.includes(c) && c.length === 1;
+const tileName = c => isHon(c) ? {E:'Timur',S:'Selatan',W:'Barat',N:'Utara',C:'Naga Merah',F:'Naga Hijau',P:'Naga Putih'}[c] : rk(c) + ' ' + {m:'Karakter',p:'Bulat',s:'Bambu'}[st(c)];
+
+const defaults = () => ({
+  variant:'hk', names:['Pemain 1','Pemain 2','Pemain 3','Pemain 4'], dealer:0, streak:0, pot:0, round:0, hist:[],
+  set:{hk:{table:'full',limit:10,shooter:'all'}, riichi:{start:30000}, tw:{base:50,per:20}, sg:{unit:1,limit:5,shooterAll:false}}
+});
+const freshHand = () => ({shape:'std', groups:[null,null,null,null,null], pair:null, pairs:[null,null,null,null,null,null,null], active:0, pick:null, win:null});
+const freshEntry = () => ({winner:null, method:'tsumo', from:null, han:1, fu:30, yakuman:false, mcr:8, flowers:0, value:25, jokerless:false,
+  mode:'tiles', manualVal:0, adj:0, hand:freshHand(), ctx:{seatFl:0, fl:0, flSet:0, an:0, rob:0, rep:0, last:0, heaven:0}});
+
+let S, E = freshEntry(), confirming = null;
+try { S = JSON.parse(localStorage.getItem('jade-score') || 'null'); } catch (e) { S = null; }
+if (!S || !S.names) S = defaults();
+S.set = Object.assign(defaults().set, S.set || {});
+if (S.round === undefined) S.round = 0;
+const save = () => { try { localStorage.setItem('jade-score', JSON.stringify(S)); } catch (e) {} };
+
+const fmt = n => (Math.round(n * 100) / 100).toLocaleString('id-ID');
+const sgn = n => (n > 0 ? '+' : '') + fmt(n);
+const name = i => S.names[i] || ('Pemain ' + (i + 1));
+const up100 = x => Math.ceil(x / 100) * 100;
+const $ = id => document.getElementById(id);
+const tl = (c, attr = '', cls = '') => `<span class="tl ${cls}" ${attr} title="${tileName(c)}">${TILES[c]}</span>`;
+
+function totals() {
+  const start = S.variant === 'riichi' ? S.set.riichi.start : 0;
+  const t = [start, start, start, start];
+  S.hist.forEach(h => h.d.forEach((v, i) => t[i] += v));
+  return t;
+}
+
+/* ---------- hand model ---------- */
+const nSets = () => S.variant === 'tw' ? 5 : 4;
+function handTiles() {
+  const H = E.hand, out = [];
+  if (H.shape === 'pairs') H.pairs.forEach(p => p && out.push(...p));
+  else { H.groups.slice(0, nSets()).forEach(g => g && out.push(...g.tiles)); if (H.pair) out.push(...H.pair); }
+  return out;
+}
+const countOf = c => handTiles().filter(x => x === c).length;
+function slotCount() { return E.hand.shape === 'pairs' ? 7 : nSets() + 1; }
+function slotFilled(i) {
+  const H = E.hand;
+  if (H.shape === 'pairs') return !!H.pairs[i];
+  return i < nSets() ? !!H.groups[i] : !!H.pair;
+}
+function nextEmpty(from) {
+  const n = slotCount();
+  for (let k = 0; k < n; k++) { const i = (from + k) % n; if (!slotFilled(i)) return i; }
+  return -1;
+}
+function handComplete() {
+  if (E.hand.shape === 'orphans') return true;
+  for (let i = 0; i < slotCount(); i++) if (!slotFilled(i)) return false;
+  return true;
+}
+function waitType() {
+  const H = E.hand, w = H.win;
+  if (!w) return null;
+  if (H.shape === 'pairs' || w.slot === nSets()) return 'single';
+  const g = H.groups[w.slot]; if (!g) return null;
+  if (g.type !== 'chi') return 'pong';
+  const s = rk(g.tiles[0]), r = rk(g.tiles[w.pos]);
+  if (r === s + 1) return 'closed';
+  if ((s === 1 && r === 3) || (s === 7 && r === 7)) return 'edge';
+  return 'two';
+}
+const WAITNAME = {single:'tunggu tunggal (pasangan)', closed:'tunggu tengah', edge:'tunggu pinggir', two:'tunggu dua sisi', pong:'tunggu dua pasangan'};
+
+/* ---------- pattern detection ---------- */
+function detect() {
+  const v = S.variant, H = E.hand, C = E.ctx, out = [], off = [];
+  const add = (l, val) => out.push({l, v: val}), skip = l => off.push(l);
+  const self = E.method === 'tsumo';
+  const seat = E.winner === null ? null : WCODE[(E.winner - S.dealer + 4) % 4];
+  const round = WCODE[S.round];
+  let lim = false;
+  if (!handComplete()) {
+    const left = []; for (let i = 0; i < slotCount(); i++) if (!slotFilled(i)) left.push(i);
+    return {incomplete: true, left};
+  }
+  const tiles = handTiles(), counts = {};
+  tiles.forEach(c => counts[c] = (counts[c] || 0) + 1);
+  const over = Object.keys(counts).filter(c => counts[c] > 4);
+  const suits = new Set(tiles.filter(c => !isHon(c)).map(st)), hasHon = tiles.some(isHon);
+  const flush = H.shape === 'orphans' ? null : suits.size === 1 && !hasHon ? 'full' : suits.size === 1 && hasHon ? 'half' : suits.size === 0 ? 'honors' : null;
+  const wait = waitType();
+
+  // bonus tiles and situations (shared)
+  const bonus = () => {
+    if (v === 'hk') {
+      if (C.fl === 0) add('Tanpa bunga', 1);
+      if (C.seatFl) add('Bunga kursi' + (C.seatFl > 1 ? ' ×' + C.seatFl : ''), C.seatFl);
+      if (C.flSet) add('Set bunga lengkap' + (C.flSet > 1 ? ' ×2' : ''), 2 * C.flSet);
+      if (C.rob) add('Rampok Kong', 1);
+      if (C.rep) add('Menang dari ubin pengganti', 1);
+      if (C.last) add('Ubin terakhir', 1);
+      if (C.heaven) { add('Tangan surga / bumi', 'batas'); lim = true; }
+      if (self) add('Tarikan sendiri', 1);
+    }
+    if (v === 'tw') {
+      if (C.seatFl) add('Bunga kursi' + (C.seatFl > 1 ? ' ×' + C.seatFl : ''), C.seatFl);
+      if (C.fl === 8) add('8 bunga', 8);
+      if (C.last) add('Ubin terakhir', 1);
+      if (C.rep || C.rob) add('Setelah Kong / rampok Kong', 1);
+    }
+    if (v === 'sg') {
+      if (C.an) add('Ubin hewan' + (C.an > 1 ? ' ×' + C.an : ''), C.an);
+      if (C.an === 4) add('Keempat hewan', 1);
+      if (C.seatFl) add('Bunga kursi' + (C.seatFl > 1 ? ' ×' + C.seatFl : ''), C.seatFl);
+      if (C.flSet) add('Set bunga lengkap' + (C.flSet > 1 ? ' ×2' : ''), 2 * C.flSet);
+      if (C.fl === 8) { add('8 bunga', 'batas'); lim = true; }
+      if (C.rep) add('Menang dari ubin pengganti', 1);
+      if (C.rob || C.last) add('Rampok Kong / ubin terakhir', 1);
+    }
+  };
+
+  if (H.shape === 'orphans') {
+    add('13 yatim', 'batas'); lim = true; bonus();
+    return {list: out, off, lim, over, wait};
+  }
+  if (H.shape === 'pairs') {
+    add('Tujuh pasang', 4);
+    if (flush === 'full') add('Satu jenis saja', 7); else if (flush === 'half') add('Satu jenis + ubin huruf', 3);
+    else if (flush === 'honors') { add('Semua ubin huruf', 'batas'); lim = true; }
+    bonus();
+    return {list: out, off, lim, over, wait};
+  }
+
+  const gs = H.groups.slice(0, nSets()), pair = H.pair[0];
+  const chows = gs.filter(g => g.type === 'chi'), pungs = gs.filter(g => g.type !== 'chi');
+  const dragonP = pungs.filter(g => isDragon(g.tiles[0])).length;
+  const windP = pungs.filter(g => isWind(g.tiles[0])).map(g => g.tiles[0]);
+  const concealed = gs.every(g => !g.open);
+  const concealedPungs = gs.filter((g, i) => g.type !== 'chi' && !g.open && !(!self && H.win && H.win.slot === i)).length;
+  const allChows = chows.length === gs.length, allPungs = pungs.length === gs.length;
+  const big3 = dragonP === 3, small3 = dragonP === 2 && isDragon(pair);
+  const big4 = windP.length === 4, small4 = windP.length === 3 && isWind(pair);
+
+  if (v === 'hk') {
+    if (flush === 'honors') { add('Semua ubin huruf', 'batas'); lim = true; }
+    if (big4) { add('Empat angin besar', 'batas'); lim = true; }
+    if (flush === 'full') add('Satu jenis saja', 7); else if (flush === 'half') add('Satu jenis + ubin huruf', 3);
+    if (allPungs) add('Semua Pong', 3);
+    if (allChows) add('Semua Chi', 1);
+    if (big3) add('Tiga Naga besar', 8); else if (small3) add('Tiga Naga kecil', 5); else if (dragonP) add('Pong Naga' + (dragonP > 1 ? ' ×' + dragonP : ''), dragonP);
+    if (big3 || small3) skip('Pong Naga (sudah termasuk)');
+    if (!big4) {
+      if (seat && windP.includes(seat)) add('Pong angin kursi (' + WNAME[WCODE.indexOf(seat)] + ')', 1);
+      if (windP.includes(round)) add('Pong angin ronde (' + WNAME[S.round] + ')', 1);
+    }
+    if (concealed) add('Tangan tertutup', 1);
+    bonus();
+  }
+
+  if (v === 'tw') {
+    if (concealed && self) add('Tertutup + tarik sendiri', 3);
+    else if (concealed) add('Tangan tertutup', 1);
+    else if (self) add('Tarikan sendiri', 1);
+    if (flush === 'honors') add('Semua ubin huruf', 16);
+    if (big4) add('Empat angin besar', 16); else if (small4) add('Empat angin kecil', 8);
+    if (flush === 'full') add('Satu jenis saja', 8); else if (flush === 'half') add('Satu jenis + ubin huruf', 4);
+    if (allPungs) add('Semua Pong', 4);
+    const pingHu = allChows && !hasHon && C.fl === 0 && !self && wait === 'two';
+    if (pingHu) add('Semua Chi', 2); else if (allChows) skip('Semua Chi (perlu: tanpa huruf & bunga, dari buangan, tunggu dua sisi)');
+    if (big3) add('Tiga Naga besar', 8); else if (small3) add('Tiga Naga kecil', 4); else if (dragonP) add('Pong Naga' + (dragonP > 1 ? ' ×' + dragonP : ''), dragonP);
+    if (!big4 && !small4) {
+      if (seat && windP.includes(seat)) add('Pong angin kursi (' + WNAME[WCODE.indexOf(seat)] + ')', 1);
+      if (windP.includes(round)) add('Pong angin ronde (' + WNAME[S.round] + ')', 1);
+    }
+    if (concealedPungs >= 5) add('Lima Pong tertutup', 8); else if (concealedPungs === 4) add('Empat Pong tertutup', 5); else if (concealedPungs === 3) add('Tiga Pong tertutup', 2);
+    if (['single','closed','edge'].includes(wait)) add('Tunggu 1 ubin saja', 1);
+    bonus();
+  }
+
+  if (v === 'sg') {
+    if (flush === 'honors') { add('Semua ubin huruf', 'batas'); lim = true; }
+    if (flush === 'full') add('Satu jenis saja', 4); else if (flush === 'half') add('Satu jenis + ubin huruf', 2);
+    if (allPungs) add('Semua Pong', 2);
+    if (big3) { add('Tiga Cendekiawan besar', 'batas'); lim = true; }
+    else if (small3) add('Tiga Cendekiawan kecil', 3);
+    else if (dragonP) add('Pong Naga' + (dragonP > 1 ? ' ×' + dragonP : ''), dragonP);
+    if (seat && windP.includes(seat)) add('Pong angin kursi (' + WNAME[WCODE.indexOf(seat)] + ')', 1);
+    if (windP.includes(round)) add('Pong angin ronde (' + WNAME[S.round] + ')', 1);
+    const pairOk = !isDragon(pair) && pair !== seat && pair !== round;
+    if (allChows && pairOk) {
+      if (C.fl === 0 && C.an === 0 && (self || wait === 'two')) add('Semua Chi (Ping Hu)', 4);
+      else add('Ping Hu kecil (ada bunga/hewan atau tunggu 1 ubin)', 1);
+    }
+    bonus();
+  }
+  return {list: out, off, lim, over, wait};
+}
+
+function hkPoints(f, s) {
+  const half = [1,2,4,8,16,24,32,48,64,96,128,192,256,384];
+  f = Math.min(f, s.limit);
+  return s.table === 'full' ? Math.pow(2, f) : half[Math.min(f, 13)];
+}
+
+/* ---------- payments ---------- */
+function compute() {
+  const v = S.variant, w = E.winner, d = [0,0,0,0];
+  const r = {d, value:null, unit:VARIANTS[v].unit, calc:'', warn:'', det:null};
+  if (TILE_MODE.includes(v) && E.mode === 'tiles') r.det = detect();
+  if (w === null) { r.warn = 'Pilih pemenang dulu.'; return r; }
+  if (E.method === 'ron' && (E.from === null || E.from === w)) { r.warn = 'Pilih siapa yang membuang ubin kemenangan.'; return r; }
+  const others = [0,1,2,3].filter(i => i !== w);
+  const pay = (i, x) => { d[i] -= x; d[w] += x; };
+
+  let base = null, lim = false, parts = '';
+  if (TILE_MODE.includes(v)) {
+    if (E.mode === 'manual') { base = E.manualVal; parts = 'Nilai diisi langsung'; }
+    else {
+      const det = r.det;
+      if (det.incomplete) { r.warn = 'Lengkapi dulu ubin di tangan pemenang.'; return r; }
+      if (det.over.length) { r.warn = 'Ada ubin lebih dari 4 buah: ' + det.over.map(tileName).join(', ') + '.'; return r; }
+      base = det.list.reduce((a, x) => a + (typeof x.v === 'number' ? x.v : 0), 0) + E.adj;
+      lim = det.lim;
+      parts = det.list.map(x => x.l + ' ' + x.v).join(' · ') + (E.adj ? ' · koreksi ' + sgn(E.adj) : '');
+    }
+  }
+
+  if (v === 'hk') {
+    const s = S.set.hk; let f = lim ? s.limit : Math.min(Math.max(base, 0), s.limit);
+    const P = hkPoints(f, s);
+    r.value = f; r.calc = (parts || 'Tanpa pola') + ' → ' + fmt(P) + ' poin' + (s.table === 'full' ? ' (2 pangkat ' + f + ')' : ' (half spicy)');
+    if (E.method === 'tsumo') others.forEach(i => pay(i, P / 2));
+    else if (s.shooter === 'all') pay(E.from, P);
+    else { pay(E.from, P / 2); others.filter(i => i !== E.from).forEach(i => pay(i, P / 4)); }
+  }
+
+  if (v === 'riichi') {
+    const dealerWin = w === S.dealer, han = E.han, fu = E.fu;
+    let b, tier = '';
+    if (E.yakuman) { b = 8000; tier = 'Yakuman'; }
+    else if (han >= 11) { b = 6000; tier = 'Sanbaiman'; }
+    else if (han >= 8) { b = 4000; tier = 'Baiman'; }
+    else if (han >= 6) { b = 3000; tier = 'Haneman'; }
+    else if (han >= 5) { b = 2000; tier = 'Mangan'; }
+    else { b = Math.min(fu * Math.pow(2, han + 2), 2000); if (b === 2000) tier = 'Mangan'; }
+    const hb = S.streak;
+    if (E.method === 'ron') {
+      pay(E.from, up100(b * (dealerWin ? 6 : 4)) + hb * 300);
+      r.calc = (tier || han + ' han ' + fu + ' fu') + ' · Ron ' + (dealerWin ? 'dealer' : 'non-dealer') + (hb ? ' · ' + hb + ' penanda +' + hb * 300 : '');
+    } else {
+      others.forEach(i => pay(i, (dealerWin || i === S.dealer ? up100(b * 2) : up100(b)) + hb * 100));
+      r.calc = (tier || han + ' han ' + fu + ' fu') + ' · Tsumo ' + (dealerWin ? 'dealer: semua bayar sama' : 'non-dealer: dealer bayar 2×') + (hb ? ' · ' + hb + ' penanda +100/orang' : '');
+    }
+    if (S.pot) { d[w] += S.pot; r.calc += ' · ambil ' + fmt(S.pot) + ' dari tongkat Riichi'; }
+    r.value = E.yakuman ? 'Yakuman' : han; r.unit = E.yakuman ? '' : 'han ' + fu + ' fu';
+  }
+
+  if (v === 'tw') {
+    const s = S.set.tw, t = Math.max(base, 0), db = 1 + 2 * S.streak;
+    const cost = i => s.base + (t + ((w === S.dealer || i === S.dealer) ? db : 0)) * s.per;
+    if (E.method === 'tsumo') others.forEach(i => pay(i, cost(i))); else pay(E.from, cost(E.from));
+    r.value = t; r.calc = (parts || 'Tanpa tai') + ' · dasar ' + s.base + ' + tai × ' + s.per + ' · dealer +' + db + ' tai bila dealer ikut menang/membayar';
+  }
+
+  if (v === 'mcr') {
+    const tot = E.mcr + E.flowers;
+    if (E.method === 'tsumo') others.forEach(i => pay(i, 8 + tot));
+    else { pay(E.from, 8 + tot); others.filter(i => i !== E.from).forEach(i => pay(i, 8)); }
+    r.value = tot; r.calc = E.mcr + ' poin pola' + (E.flowers ? ' + ' + E.flowers + ' bunga' : '') + (E.method === 'tsumo' ? ' · tiap pemain bayar 8 + ' + tot : ' · pembuang 8 + ' + tot + ', lain 8');
+    if (E.mcr < 8) r.warn = 'MCR minimal 8 poin (tanpa bunga). Tangan ini belum boleh menang.';
+  }
+
+  if (v === 'sg') {
+    const s = S.set.sg; let t = lim ? s.limit : Math.min(Math.max(base, 0), s.limit);
+    const one = s.unit * Math.pow(2, Math.max(t, 1) - 1);
+    if (E.method === 'tsumo') others.forEach(i => pay(i, 2 * one));
+    else if (s.shooterAll) pay(E.from, 4 * one);
+    else { pay(E.from, 2 * one); others.filter(i => i !== E.from).forEach(i => pay(i, one)); }
+    r.value = t; r.calc = (parts || 'Tanpa tai') + ' · 1 bagian = ' + fmt(one) + ' unit';
+    if (t < 1) r.warn = 'Singapura minimal 1 tai untuk menang.';
+  }
+
+  if (v === 'am') {
+    const V = E.value * (E.jokerless ? 2 : 1);
+    if (E.method === 'tsumo') others.forEach(i => pay(i, 2 * V));
+    else { pay(E.from, 2 * V); others.filter(i => i !== E.from).forEach(i => pay(i, V)); }
+    r.value = V; r.calc = 'Nilai kartu ' + E.value + (E.jokerless ? ' × 2 (tanpa joker)' : '') + (E.method === 'tsumo' ? ' · semua bayar 2×' : ' · pembuang 2×, lain 1×');
+  }
+  return r;
+}
+
+/* ---------- dealer rotation ---------- */
+function afterWin(w) {
+  const stays = ['hk','riichi','tw','sg'].includes(S.variant) && w === S.dealer;
+  if (stays) S.streak++; else rotate();
+}
+function rotate() { S.dealer = (S.dealer + 1) % 4; S.streak = 0; if (S.dealer === 0) S.round = (S.round + 1) % 4; }
+function afterDraw() { if (['hk','riichi','tw'].includes(S.variant)) S.streak++; else rotate(); }
+
+/* ---------- render ---------- */
+function renderVariants() {
+  $('variants').innerHTML = Object.entries(VARIANTS).map(([k, o]) =>
+    `<button class="pill" data-variant="${k}" aria-pressed="${S.variant === k}">${o.name}</button>`).join('');
+  $('vtitle').textContent = VARIANTS[S.variant].name;
+}
+function renderBoard() {
+  const t = totals(), start = S.variant === 'riichi' ? S.set.riichi.start : 0;
+  $('board').innerHTML = [0,1,2,3].map(i => {
+    const diff = t[i] - start;
+    return `<div class="card seat${i === S.dealer ? ' dealer' : ''}">
+      ${i === S.dealer ? '<span class="badge">Dealer</span>' : ''}
+      <div class="seat-top"><span class="wind" title="Angin kursi">${WINDS[(i - S.dealer + 4) % 4]}</span>
+      <input id="name${i}" data-name="${i}" value="${S.names[i].replace(/"/g, '&quot;')}" aria-label="Nama pemain ${i + 1}" maxlength="18"></div>
+      <div class="total num ${diff > 0 ? 'pos' : diff < 0 ? 'neg' : ''}">${fmt(t[i])}</div>
+      ${S.variant === 'riichi' ? `<button class="pill mini" data-riichi="${i}">+ Riichi (setor 1.000)</button>` : ''}
+    </div>`;
+  }).join('');
+  const parts = [];
+  parts.push(`<label>Dealer: <select id="dealersel">${[0,1,2,3].map(i => `<option value="${i}"${i === S.dealer ? ' selected' : ''}>${name(i)}</option>`).join('')}</select></label>`);
+  parts.push(`<label>Angin ronde: <select id="roundsel">${[0,1,2,3].map(i => `<option value="${i}"${i === S.round ? ' selected' : ''}>${WINDS[i]} ${WNAME[i]}</option>`).join('')}</select></label>`);
+  if (['hk','riichi','tw'].includes(S.variant)) parts.push(`<span>Dealer bertahan: <b class="num">${S.streak}×</b>${S.variant === 'riichi' ? ' (penanda)' : S.variant === 'tw' ? ` → bonus ${1 + 2 * S.streak} tai` : ''}</span>`);
+  if (S.variant === 'riichi') parts.push(`<span>Tongkat Riichi di meja: <b class="num">${fmt(S.pot)}</b></span>`);
+  $('boardfoot').innerHTML = parts.join('');
+}
+
+function stepper(id, val, label) {
+  return `<span class="stepper"><button data-step="${id}" data-d="-1" aria-label="Kurangi ${label}">−</button><input id="${id}" type="number" inputmode="numeric" value="${val}" aria-label="${label}"><button data-step="${id}" data-d="1" aria-label="Tambah ${label}">+</button></span>`;
+}
+function counter(key, label, max) {
+  const n = E.ctx[key];
+  return `<span class="counter${n ? ' on' : ''}"><span>${label}</span><button data-cdec="${key}" aria-label="Kurangi ${label}">−</button><output>${n}</output><button data-cinc="${key}" data-max="${max}" aria-label="Tambah ${label}">+</button></span>`;
+}
+const toggle = (key, label) => `<button class="item" data-ctog="${key}" aria-pressed="${!!E.ctx[key]}">${label}</button>`;
+
+function chooserHTML() {
+  const c = E.hand.pick; if (!c) return '';
+  const opts = [];
+  const room = k => countOf(c) + k <= 4;
+  if (room(3)) opts.push({type:'pong', tiles:[c,c,c], l:'Pong'});
+  if (room(4)) opts.push({type:'kong', tiles:[c,c,c,c], l:'Kong'});
+  if (!isHon(c)) {
+    const r = rk(c), s = st(c);
+    for (let a = r - 2; a <= r; a++) if (a >= 1 && a <= 7) {
+      const t = [a, a + 1, a + 2].map(x => x + s);
+      if (t.every(x => countOf(x) + 1 <= 4)) opts.push({type:'chi', tiles:t, l:'Chi'});
+    }
+  }
+  E.hand.opts = opts;
+  return `<div class="chooser"><span class="status">Set apa dengan ${tileName(c)}?</span>${opts.map((o, i) =>
+    `<button data-opt="${i}">${o.tiles.map(x => tl(x)).join('')} ${o.l}</button>`).join('') || '<span class="info">Ubin ini sudah habis (maks. 4).</span>'}
+    <button data-cancelpick="1">Batal</button></div>`;
+}
+
+function slotsHTML() {
+  const H = E.hand, n = nSets();
+  const win = H.win;
+  const tilesOf = (arr, slot) => arr.map((c, pos) => tl(c, `data-wt="${slot}:${pos}"`, win && win.slot === slot && win.pos === pos ? 'win' : '')).join('');
+  let h = '<div class="slots">';
+  if (H.shape === 'pairs') {
+    for (let i = 0; i < 7; i++) {
+      const p = H.pairs[i];
+      h += `<div class="slot${H.active === i ? ' active' : ''}${p ? ' filled' : ''}" data-slot="${i}"><div class="slot-h">Pasangan ${i + 1}${p ? `<button class="tiny" data-clear="${i}">Hapus</button>` : ''}</div>
+        <div class="slot-t">${p ? tilesOf(p, i) : '<em>Ketuk ubin di bawah</em>'}</div></div>`;
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const g = H.groups[i];
+      h += `<div class="slot${H.active === i ? ' active' : ''}${g ? ' filled' : ''}" data-slot="${i}"><div class="slot-h"><span class="nw">Set ${i + 1}${g ? ` · ${g.type === 'chi' ? 'Chi' : g.type === 'pong' ? 'Pong' : 'Kong'}` : ''}</span>
+        ${g ? `<span style="display:flex;gap:4px"><button class="tiny" data-open="${i}" aria-pressed="${g.open}">${g.open ? 'Dibuka' : 'Tertutup'}</button><button class="tiny" data-clear="${i}">Hapus</button></span>` : ''}</div>
+        <div class="slot-t">${g ? tilesOf(g.tiles, i) : '<em>Ketuk ubin di bawah</em>'}</div></div>`;
+    }
+    h += `<div class="slot${H.active === n ? ' active' : ''}${H.pair ? ' filled' : ''}" data-slot="${n}"><div class="slot-h">Pasangan${H.pair ? `<button class="tiny" data-clear="${n}">Hapus</button>` : ''}</div>
+      <div class="slot-t">${H.pair ? tilesOf(H.pair, n) : '<em>Ketuk ubin di bawah</em>'}</div></div>`;
+  }
+  return h + '</div>';
+}
+
+function paletteHTML() {
+  const rows = [['m','Karakter'],['p','Bulat'],['s','Bambu']].map(([s]) => [1,2,3,4,5,6,7,8,9].map(i => i + s));
+  rows.push(['E','S','W','N','C','F','P']);
+  return '<div class="pal">' + rows.map(r => '<div class="pal-row">' + r.map(c =>
+    `<button data-tile="${c}" aria-label="${tileName(c)}"${countOf(c) >= 4 ? ' disabled' : ''}>${TILES[c]}</button>`).join('') + '</div>').join('') + '</div>';
+}
+
+function tileEntryHTML(r) {
+  const v = S.variant, H = E.hand;
+  let h = `<div class="row"><p class="label">Cara isi nilai</p><div class="seg">
+    <button class="opt" data-mode="tiles" aria-pressed="${E.mode === 'tiles'}">Masukkan ubin (otomatis)</button>
+    <button class="opt" data-mode="manual" aria-pressed="${E.mode === 'manual'}">Isi ${VARIANTS[v].unit} langsung</button></div></div>`;
+  if (E.mode === 'manual') return h + `<div class="row"><p class="label">Jumlah ${VARIANTS[v].unit}</p>${stepper('manualVal', E.manualVal, VARIANTS[v].unit)}</div>`;
+
+  const shapes = v === 'hk' ? [['std','4 set + 1 pasangan'],['pairs','7 pasang'],['orphans','13 yatim']]
+    : v === 'sg' ? [['std','4 set + 1 pasangan'],['orphans','13 yatim']] : [['std','5 set + 1 pasangan']];
+  if (shapes.length > 1) h += `<div class="seg">${shapes.map(([k, l]) => `<button class="opt" data-shape="${k}" aria-pressed="${H.shape === k}">${l}</button>`).join('')}</div>`;
+
+  if (H.shape !== 'orphans') {
+    const det = r.det, done = handComplete();
+    const status = !done ? (H.shape === 'pairs' ? 'Ketuk ubin untuk mengisi Pasangan ' + (H.active + 1)
+        : H.active === nSets() ? 'Ketuk ubin pasangan (mata)' : 'Ketuk satu ubin dari Set ' + (H.active + 1) + ', lalu pilih Chi / Pong / Kong')
+      : !H.win ? 'Tangan lengkap. Ketuk ubin yang membuat menang (ubin kemenangan) di atas.'
+      : 'Ubin kemenangan: ' + tileName(handTilesAt(H.win)) + ' · ' + WAITNAME[waitType()];
+    h += slotsHTML() + `<p class="status">${status}</p>` + chooserHTML() + (done ? '' : paletteHTML());
+  }
+
+  // what cannot be seen from the tiles
+  const seatI = E.winner === null ? null : (E.winner - S.dealer + 4) % 4;
+  h += `<div class="row"><p class="label">Yang tidak terlihat dari ubin</p>
+    <p class="info">Kursi pemenang: <b>${seatI === null ? 'pilih pemenang dulu' : WINDS[seatI] + ' ' + WNAME[seatI]}</b> · Angin ronde: <b>${WINDS[S.round]} ${WNAME[S.round]}</b> (ubah di bagian skor)</p>
+    <div class="ctx">${counter('fl', 'Jumlah bunga dibuka', 8)}${counter('seatFl', 'Bunga sesuai kursi', 2)}
+    ${v !== 'tw' ? counter('flSet', 'Set bunga lengkap', 2) : ''}${v === 'sg' ? counter('an', 'Ubin hewan', 4) : ''}</div>
+    <div class="ctx">${toggle('rob', 'Rampok Kong')}${toggle('rep', 'Menang dari ubin pengganti')}${toggle('last', 'Ubin terakhir')}${v === 'hk' ? toggle('heaven', 'Tangan surga / bumi') : ''}</div></div>`;
+
+  const det = r.det;
+  if (det && !det.incomplete) {
+    h += `<div class="row"><p class="label">Pola terdeteksi</p><div class="found">${det.list.length ? det.list.map(x => `<span>${x.l}<b>${x.v}</b></span>`).join('') : '<span class="off">Belum ada pola bernilai</span>'}
+      ${det.off.map(x => `<span class="off">${x}</span>`).join('')}</div></div>
+      <div class="row"><p class="label">Koreksi (pola yang tidak terdeteksi)</p>${stepper('adj', E.adj, 'koreksi')}</div>`;
+  }
+  return h;
+}
+function handTilesAt(w) { const H = E.hand; if (H.shape === 'pairs') return H.pairs[w.slot][w.pos]; return w.slot === nSets() ? H.pair[w.pos] : H.groups[w.slot].tiles[w.pos]; }
+
+function renderEntry() {
+  const v = S.variant;
+  let h = `<div class="grid2">
+    <div class="row"><p class="label">Siapa yang menang?</p><div class="seg">${[0,1,2,3].map(i => `<button class="opt" data-winner="${i}" aria-pressed="${E.winner === i}">${name(i)}</button>`).join('')}</div></div>
+    <div class="row"><p class="label">Menang dari</p><div class="seg">
+      <button class="opt" data-method="tsumo" aria-pressed="${E.method === 'tsumo'}">Tarikan sendiri</button>
+      <button class="opt" data-method="ron" aria-pressed="${E.method === 'ron'}">Buangan pemain lain</button></div></div>
+  </div>`;
+  if (E.method === 'ron') h += `<div class="row"><p class="label">Siapa yang membuang?</p><div class="seg">${[0,1,2,3].map(i => `<button class="opt" data-from="${i}" aria-pressed="${E.from === i}"${i === E.winner ? ' disabled' : ''}>${name(i)}</button>`).join('')}</div></div>`;
+
+  const r = compute();
+  if (TILE_MODE.includes(v)) h += tileEntryHTML(r);
+  if (v === 'riichi') h += `<div class="grid2"><div class="row"><p class="label">Han (termasuk dora)</p>${stepper('han', E.han, 'han')}</div>
+      <div class="row"><p class="label">Fu</p><div class="seg">${FUS.map(f => `<button class="opt" data-fu="${f}" aria-pressed="${E.fu === f}">${f}</button>`).join('')}</div></div></div>
+      <div class="items"><button class="item" data-yakuman="1" aria-pressed="${E.yakuman}">Yakuman <b>32.000 / 48.000</b></button>
+      <span class="item auto">Pinfu Tsumo 20 fu · Chiitoitsu 25 fu · Ron tertutup biasanya 30–40 fu</span></div>`;
+  if (v === 'mcr') h += `<div class="grid2"><div class="row"><p class="label">Poin pola (tanpa bunga)</p>${stepper('mcr', E.mcr, 'poin pola')}</div>
+      <div class="row"><p class="label">Jumlah bunga</p>${stepper('flowers', E.flowers, 'bunga')}</div></div>`;
+  if (v === 'am') h += `<div class="grid2"><div class="row"><p class="label">Nilai pola di kartu NMJL</p>${stepper('value', E.value, 'nilai kartu')}
+      <div class="seg" style="margin-top:6px">${[25,30,35,40,50].map(x => `<button class="opt" data-val="${x}" aria-pressed="${E.value === x}">${x}</button>`).join('')}</div></div>
+      <div class="row"><p class="label">Bonus</p><div class="items"><button class="item" data-jokerless="1" aria-pressed="${E.jokerless}">Tanpa joker <b>×2</b></button></div></div></div>`;
+
+  const showVal = r.value !== null;
+  h += `<div class="result" aria-live="polite"><div style="min-width:0">
+      <div class="value num">${showVal ? (typeof r.value === 'number' ? fmt(r.value) : r.value) : '–'}<small>${showVal ? r.unit : ''}</small></div>
+      <div class="calc">${r.calc || 'Pilih pemenang, cara menang, lalu isi tangannya untuk melihat pembayaran.'}</div></div>
+      <div class="pays">${[0,1,2,3].map(i => `<div class="pay"><span>${name(i)}</span><b class="num ${r.d[i] > 0 ? 'pos' : r.d[i] < 0 ? 'neg' : ''}">${r.d[i] ? sgn(r.d[i]) : '0'}</b></div>`).join('')}</div></div>`;
+  if (r.warn) h += `<div class="warn">${r.warn}</div>`;
+  const ready = E.winner !== null && !(E.method === 'ron' && (E.from === null || E.from === E.winner)) && r.value !== null;
+  h += `<div class="actions"><button class="primary" id="record"${ready ? '' : ' disabled'}>Catat tangan</button>
+      <button class="ghost" id="draw">Seri (tembok habis)</button><button class="ghost" id="clear">Kosongkan</button></div>`;
+  h += settingsHTML();
+  const open = !!document.querySelector('#entry details[open]');
+  $('entry').innerHTML = h;
+  if (open) document.querySelector('#entry details').open = true;
+}
+
+function settingsHTML() {
+  const v = S.variant, s = S.set;
+  let b = '';
+  if (v === 'hk') b = `<label>Tabel poin <select id="hk-table"><option value="full"${s.hk.table === 'full' ? ' selected' : ''}>2 pangkat faan (full spicy)</option><option value="half"${s.hk.table === 'half' ? ' selected' : ''}>Half spicy</option></select></label>
+      <label>Batas faan <select id="hk-limit">${[8,10,13].map(x => `<option${s.hk.limit === x ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label>Menang dari buangan <select id="hk-shooter"><option value="all"${s.hk.shooter === 'all' ? ' selected' : ''}>Pembuang bayar penuh</option><option value="half"${s.hk.shooter === 'half' ? ' selected' : ''}>Pembuang ½, dua lain ¼</option></select></label>`;
+  if (v === 'riichi') b = `<label>Poin awal <input id="ri-start" type="number" step="1000" value="${s.riichi.start}"></label><span>Seri: pemain yang belum tenpai membayar 3.000 total; catat manual bila perlu.</span>`;
+  if (v === 'tw') b = `<label>Nilai dasar <input id="tw-base" type="number" value="${s.tw.base}"></label><label>Nilai per tai <input id="tw-per" type="number" value="${s.tw.per}"></label>`;
+  if (v === 'sg') b = `<label>Nilai 1 unit <input id="sg-unit" type="number" value="${s.sg.unit}"></label>
+      <label>Batas tai <select id="sg-limit">${[3,4,5,6,8,10].map(x => `<option${s.sg.limit === x ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label><input id="sg-shooter" type="checkbox"${s.sg.shooterAll ? ' checked' : ''}> Pembuang menanggung semua</label>`;
+  if (v === 'mcr') b = '<span>Aturan resmi MCR 2006: pembuang bayar 8 + skor, dua pemain lain 8. Tarikan sendiri: tiap pemain bayar 8 + skor. Dealer selalu pindah.</span>';
+  if (v === 'am') b = '<span>Aturan NMJL: dari buangan, pembuang bayar 2× nilai kartu dan dua lain 1×. Tarikan sendiri: semua bayar 2×. Tanpa joker: nilai ×2.</span>';
+  return `<details><summary>Aturan meja ${VARIANTS[v].name}</summary><div class="settings">${b}</div></details>`;
+}
+
+function renderHist() {
+  const list = S.hist.slice().reverse();
+  let n = S.hist.filter(h => h.type !== 'riichi').length;
+  $('hist').innerHTML = list.length ? list.map(h => {
+    const label = h.type === 'riichi' ? '·' : n--;
+    return `<div class="h"><span class="n">${label}</span><div><p>${h.text}</p>
+      ${h.tiles ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">${h.tiles.map(g => `<span style="display:inline-flex;gap:1px">${g.map(c => `<span class="tl" style="line-height:0">${TILES[c].replace('<svg ', '<svg style="width:20px;height:27px" ')}</span>`).join('')}</span>`).join('')}</div>` : ''}
+      <div class="d num">${h.d.map((x, i) => x ? `<span>${name(i)} <b class="${x > 0 ? 'pos' : 'neg'}">${sgn(x)}</b></span>` : '').join('')}</div></div></div>`;
+  }).join('') : '<p class="empty">Belum ada tangan. Pilih pemenang di atas, isi tangannya, lalu tekan "Catat tangan".</p>';
+  $('confirmbox').innerHTML = confirming === 'new'
+    ? `<div class="confirm">Hapus semua skor dan mulai dari nol? <button class="primary" style="padding:7px 14px;font-size:14px" id="yes">Ya, mulai baru</button><button class="ghost" style="padding:6px 12px" id="no">Batal</button></div>`
+    : confirming && confirming.v ? `<div class="confirm">Ganti ke ${VARIANTS[confirming.v].name} akan memulai permainan baru. <button class="primary" style="padding:7px 14px;font-size:14px" id="yes">Ganti varian</button><button class="ghost" style="padding:6px 12px" id="no">Batal</button></div>` : '';
+}
+function renderAll() { renderVariants(); renderBoard(); renderEntry(); renderHist(); }
+
+/* ---------- events ---------- */
+document.addEventListener('click', ev => {
+  const H = E.hand;
+  const wt = ev.target.closest('[data-wt]');
+  if (wt && wt.closest('#entry') && !wt.closest('.chooser')) {
+    const [slot, pos] = wt.dataset.wt.split(':').map(Number);
+    if (handComplete()) { H.win = {slot, pos}; renderEntry(); return; }
+  }
+  const b = ev.target.closest('button');
+  if (!b) {
+    const sl = ev.target.closest('[data-slot]');
+    if (sl) { H.active = +sl.dataset.slot; H.pick = null; renderEntry(); }
+    return;
+  }
+  const ds = b.dataset;
+  if (ds.variant) {
+    if (ds.variant === S.variant) return;
+    if (S.hist.length) { confirming = {v: ds.variant}; renderHist(); return; }
+    S.variant = ds.variant; S.dealer = 0; S.streak = 0; S.pot = 0; S.round = 0; E = freshEntry(); save(); renderAll(); return;
+  }
+  if (b.id === 'yes') {
+    const keep = S.names, set = S.set, v = confirming && confirming.v ? confirming.v : S.variant;
+    S = defaults(); S.names = keep; S.set = set; S.variant = v; E = freshEntry(); confirming = null; save(); renderAll(); return;
+  }
+  if (b.id === 'no') { confirming = null; renderHist(); return; }
+  if (b.id === 'newgame') { confirming = 'new'; renderHist(); return; }
+  if (b.id === 'undo') {
+    const h = S.hist.pop(); if (!h) return;
+    S.dealer = h.prev.dealer; S.streak = h.prev.streak; S.pot = h.prev.pot; if (h.prev.round !== undefined) S.round = h.prev.round; save(); renderAll(); return;
+  }
+  if (ds.riichi !== undefined) {
+    const i = +ds.riichi, d = [0,0,0,0]; d[i] = -1000;
+    S.hist.push({type:'riichi', d, text: name(i) + ' menyatakan Riichi dan menyetor 1.000.', prev:{dealer:S.dealer, streak:S.streak, pot:S.pot, round:S.round}});
+    S.pot += 1000; save(); renderBoard(); renderEntry(); renderHist(); return;
+  }
+  if (ds.winner !== undefined) { E.winner = +ds.winner; if (E.from === E.winner) E.from = null; }
+  else if (ds.method) E.method = ds.method;
+  else if (ds.from !== undefined) E.from = +ds.from;
+  else if (ds.mode) E.mode = ds.mode;
+  else if (ds.shape) { E.hand = freshHand(); E.hand.shape = ds.shape; }
+  else if (ds.tile) {
+    const c = ds.tile;
+    if (H.shape === 'pairs') { if (countOf(c) + 2 <= 4) { H.pairs[H.active] = [c, c]; H.win = null; H.active = nextEmpty(H.active); } }
+    else if (H.active === nSets()) { if (countOf(c) + 2 <= 4) { H.pair = [c, c]; H.win = null; H.active = nextEmpty(H.active); } }
+    else H.pick = c;
+  }
+  else if (ds.opt !== undefined) {
+    const o = H.opts[+ds.opt]; H.groups[H.active] = {type:o.type, tiles:o.tiles, open:false}; H.pick = null; H.win = null; H.active = nextEmpty(H.active);
+  }
+  else if (ds.cancelpick) H.pick = null;
+  else if (ds.open !== undefined) { const g = H.groups[+ds.open]; g.open = !g.open; }
+  else if (ds.clear !== undefined) {
+    const i = +ds.clear;
+    if (H.shape === 'pairs') H.pairs[i] = null; else if (i === nSets()) H.pair = null; else H.groups[i] = null;
+    H.active = i; H.win = null; H.pick = null;
+  }
+  else if (ds.cinc) E.ctx[ds.cinc] = Math.min(E.ctx[ds.cinc] + 1, +ds.max);
+  else if (ds.cdec) E.ctx[ds.cdec] = Math.max(E.ctx[ds.cdec] - 1, 0);
+  else if (ds.ctog) E.ctx[ds.ctog] = E.ctx[ds.ctog] ? 0 : 1;
+  else if (ds.fu) E.fu = +ds.fu;
+  else if (ds.yakuman) E.yakuman = !E.yakuman;
+  else if (ds.jokerless) E.jokerless = !E.jokerless;
+  else if (ds.val) E.value = +ds.val;
+  else if (ds.step) { const k = ds.step, min = k === 'han' ? 1 : k === 'adj' ? -20 : 0; E[k] = Math.max(min, (E[k] || 0) + (+ds.d)); }
+  else if (b.id === 'clear') E = freshEntry();
+  else if (b.id === 'record') {
+    const r = compute(); if (E.winner === null || r.value === null) return;
+    const how = E.method === 'tsumo' ? 'tarikan sendiri' : 'buangan ' + name(E.from);
+    const val = typeof r.value === 'number' ? fmt(r.value) + ' ' + r.unit : r.value + (r.unit ? ' ' + r.unit : '');
+    let tiles = null;
+    if (TILE_MODE.includes(S.variant) && E.mode === 'tiles' && E.hand.shape !== 'orphans') {
+      tiles = E.hand.shape === 'pairs' ? E.hand.pairs.slice() : E.hand.groups.slice(0, nSets()).map(g => g.tiles).concat([E.hand.pair]);
+    }
+    const pats = r.det && r.det.list ? ' · ' + r.det.list.map(x => x.l).join(', ') : '';
+    S.hist.push({type:'win', d:r.d, tiles, text:`<b>${name(E.winner)}</b> menang dari ${how} · ${val}${pats}`, prev:{dealer:S.dealer, streak:S.streak, pot:S.pot, round:S.round}});
+    if (S.variant === 'riichi') S.pot = 0;
+    afterWin(E.winner); E = freshEntry(); save(); renderAll(); return;
+  }
+  else if (b.id === 'draw') {
+    S.hist.push({type:'draw', d:[0,0,0,0], text:'Seri: tembok habis tanpa pemenang.', prev:{dealer:S.dealer, streak:S.streak, pot:S.pot, round:S.round}});
+    afterDraw(); E = freshEntry(); save(); renderAll(); return;
+  }
+  else return;
+  renderEntry();
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.dataset.name !== undefined) { S.names[+t.dataset.name] = t.value; save(); renderEntry(); renderHist(); return; }
+  if (['han','mcr','flowers','value','manualVal','adj'].includes(t.id)) {
+    const n = parseInt(t.value, 10);
+    if (!isNaN(n)) { E[t.id] = Math.max(t.id === 'han' ? 1 : t.id === 'adj' ? -20 : 0, n); const id = t.id; renderEntry(); const el = $(id); if (el) el.focus(); }
+  }
+});
+document.addEventListener('change', ev => {
+  const t = ev.target, s = S.set;
+  if (t.id === 'dealersel') { S.dealer = +t.value; S.streak = 0; save(); renderBoard(); renderEntry(); return; }
+  if (t.id === 'roundsel') { S.round = +t.value; save(); renderBoard(); renderEntry(); return; }
+  if (t.id === 'hk-table') s.hk.table = t.value;
+  else if (t.id === 'hk-limit') s.hk.limit = +t.value;
+  else if (t.id === 'hk-shooter') s.hk.shooter = t.value;
+  else if (t.id === 'ri-start') { s.riichi.start = +t.value || 0; save(); renderBoard(); return; }
+  else if (t.id === 'tw-base') s.tw.base = +t.value || 0;
+  else if (t.id === 'tw-per') s.tw.per = +t.value || 0;
+  else if (t.id === 'sg-unit') s.sg.unit = +t.value || 1;
+  else if (t.id === 'sg-limit') s.sg.limit = +t.value;
+  else if (t.id === 'sg-shooter') s.sg.shooterAll = t.checked;
+  else return;
+  save(); renderEntry();
+});
+
+renderAll();
+window.__jadeTest = { compute, detect, setE: x => { E = Object.assign(freshEntry(), x); }, S: () => S, E: () => E };
+})();
+</script>
+</body></html>
