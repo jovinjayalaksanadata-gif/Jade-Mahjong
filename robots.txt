@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mahjongjogja.com/sitemap.xml

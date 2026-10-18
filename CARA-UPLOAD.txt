@@ -1,0 +1,18 @@
+CARA UPLOAD WEBSITE JADE MAHJONG KE mahjongjogja.com (GitHub Pages)
+
+1. Buka index.html dengan Notepad, cari bagian "ATUR DI SINI":
+     var WA_NUMBER = '62XXXXXXXXXX';   -> ganti dengan nomor WA kafe (contoh 6281234567890)
+     var INSTAGRAM = 'https://instagram.com/';  -> ganti dengan link Instagram kafe
+   Simpan.
+2. Buka repo GitHub yang dipakai untuk mahjongjogja.com.
+   Hapus file index.html lama kalau ada.
+3. Klik "Add file" > "Upload files", lalu SERET SEMUA ISI folder ini
+   (index.html, CNAME, favicon.svg, robots.txt, sitemap.xml, folder assets, skor, panduan)
+   ke halaman upload. Seret isinya, bukan foldernya.
+4. Klik "Commit changes". Tunggu 1-2 menit.
+5. Settings > Pages: pastikan Custom domain = mahjongjogja.com dan Enforce HTTPS tercentang.
+
+Alamat:
+  https://mahjongjogja.com           beranda
+  https://mahjongjogja.com/skor/     penghitung skor
+  https://mahjongjogja.com/panduan/  panduan aturan + PDF
