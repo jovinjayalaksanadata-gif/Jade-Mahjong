@@ -8,8 +8,8 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Hitung Skor Mahjong – Jade Mahjong</title>
 <script>
-  // Alamat server room di NAS, misalnya 'https://room.jademahjong.com'. Kosongkan kalau belum ada.
-  window.JADE_ROOM_SERVER = window.JADE_ROOM_SERVER || '';
+  // Alamat server room skor bersama (Cloudflare Worker). Kosongkan untuk mematikan fitur room.
+  window.JADE_ROOM_SERVER = window.JADE_ROOM_SERVER || 'https://room.mahjongjogja.com';
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@700&display=swap">
@@ -897,25 +897,46 @@ function joinRoom(code) {
   listen(); renderAll();
 }
 
+let wsRetry = 0, wsTimer = null, wsPing = null;
+function stopListen() {
+  clearTimeout(wsTimer); clearInterval(wsPing);
+  if (es) { const s = es; es = null; try { s.close(); } catch (e) {} }
+}
 function listen() {
-  if (es) es.close();
-  es = new EventSource(ROOM_SERVER + '/api/rooms/' + ROOM.code + '/events');
-  es.addEventListener('state', ev => {
-    const j = JSON.parse(ev.data);
+  stopListen();
+  if (!viewing()) return;
+  const sock = es = new WebSocket(ROOM_SERVER.replace(/^http/, 'ws') + '/api/rooms/' + ROOM.code + '/ws');
+  sock.onopen = () => { wsRetry = 0; wsPing = setInterval(() => { if (sock.readyState === 1) sock.send('ping'); }, 25e3); };
+  sock.onmessage = ev => {
+    if (ev.data === 'pong') return;
+    let j; try { j = JSON.parse(ev.data); } catch (e) { return; }
+    if (j.type === 'closed') { roomStatus = 'gone'; stopListen(); renderRoom(); return; }
+    if (j.type !== 'state') return;
     if (j.state && j.state.names) { S = j.state; S.set = Object.assign(defaults().set, S.set || {}); S.set.minWin = Object.assign({hk:0,tw:0,sg:1}, S.set.minWin || {}); }
     roomUpdated = j.updated; roomStatus = 'ok'; E = freshEntry(); renderAll();
-  });
-  es.addEventListener('closed', () => { roomStatus = 'gone'; es.close(); renderRoom(); });
-  es.onerror = () => {
-    if (es.readyState === 2) { roomStatus = 'offline'; renderRoom(); return; }
-    // a missing room answers with an error status, which closes the stream; check why
-    fetch(ROOM_SERVER + '/api/rooms/' + ROOM.code).then(r => { roomStatus = r.status === 404 ? 'gone' : 'retry'; if (r.status === 404) es.close(); renderRoom(); })
-      .catch(() => { roomStatus = 'retry'; renderRoom(); });
   };
+  sock.onclose = () => {
+    if (sock !== es) return; // sudah diganti atau ditutup sengaja
+    es = null; clearInterval(wsPing);
+    if (!viewing() || roomStatus === 'gone') return;
+    // cek kenapa terputus: room sudah tidak ada, atau koneksi saja
+    fetch(ROOM_SERVER + '/api/rooms/' + ROOM.code).then(r => {
+      if (r.status === 404) { roomStatus = 'gone'; renderRoom(); return; }
+      retry();
+    }).catch(retry);
+  };
+  function retry() {
+    roomStatus = 'retry'; renderRoom();
+    wsTimer = setTimeout(listen, Math.min(30e3, 1500 * 2 ** wsRetry++));
+  }
 }
+// HP baru dibuka lagi: sambung ulang tanpa menunggu
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && viewing() && ROOM_SERVER && roomStatus !== 'gone' && (!es || es.readyState > 1)) { wsRetry = 0; listen(); }
+});
 
 function leaveRoom() {
-  const was = ROOM; ROOM = null; saveRoom(); if (es) { es.close(); es = null; }
+  const was = ROOM; ROOM = null; saveRoom(); stopListen();
   if (was && was.role === 'host') api('/' + was.code, {method: 'DELETE', headers: {'X-Host-Key': was.key}}).catch(() => {});
   if (was && was.role === 'view') {
     try { S = JSON.parse(localStorage.getItem('jade-score') || 'null'); } catch (e) { S = null; }
@@ -933,7 +954,7 @@ function shareLink() {
 function renderRoom() {
   const el = $('room'); if (!el) return;
   const msg = {busy: 'Menyambungkan…', offline: 'Server room tidak bisa dihubungi. Skor tetap tersimpan di HP ini.', retry: 'Koneksi terputus, mencoba lagi…',
-    gone: 'Room ini sudah ditutup atau kedaluwarsa.'}[roomStatus] || '';
+    gone: 'Room tidak ditemukan atau sudah ditutup. Cek lagi kodenya.'}[roomStatus] || '';
   let h;
   if (!ROOM_SERVER) {
     h = `<p class="label">Room bersama</p><p class="info">Belum aktif. Server room belum diatur di halaman ini.</p>`;
