@@ -12,9 +12,9 @@
 <meta property="og:title" content="Jade Mahjong – Kafe Mahjong 24 Jam">
 <meta property="og:description" content="Pesan meja, main, hitung skor. Rp40.000/jam, paket 3 jam Rp100.000.">
 <meta property="og:url" content="https://mahjongjogja.com/">
-<meta property="og:image" content="https://mahjongjogja.com/assets/og.jpg">
+<meta property="og:image" content="https://mahjongjogja.com/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" as="image" href="/assets/naga-emas.webp">
+<link rel="preload" as="image" href="/naga-emas.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,600;0,700;1,600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
   "name": "Jade Mahjong",
   "url": "https://mahjongjogja.com/",
   "logo": "https://mahjongjogja.com/favicon.svg",
-  "image": "https://mahjongjogja.com/assets/og.jpg",
+  "image": "https://mahjongjogja.com/og.jpg",
   "description": "Kafe mahjong buka 24 jam dengan sewa meja per jam, penghitung skor, dan panduan aturan.",
   "priceRange": "Rp40.000 – Rp100.000",
   "openingHoursSpecification": [{
@@ -50,7 +50,7 @@ a:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:1
 .brand span{font-family:'Cormorant',serif;font-weight:700;font-size:20px;letter-spacing:.18em}
 .dragon{position:absolute;left:-30px;top:78px;width:calc(100% + 36px);aspect-ratio:1071/562;pointer-events:none;animation:float 8s ease-in-out infinite;will-change:transform}
 .dragon img{width:100%;height:100%;display:block}
-.shine{position:absolute;inset:0;background:linear-gradient(100deg,transparent 40%,rgba(255,246,214,.85) 50%,transparent 60%) no-repeat;background-size:250% 100%;-webkit-mask:url(/assets/naga-emas.webp) center/100% 100% no-repeat;mask:url(/assets/naga-emas.webp) center/100% 100% no-repeat;mix-blend-mode:screen;animation:sweep 6.5s ease-in-out infinite}
+.shine{position:absolute;inset:0;background:linear-gradient(100deg,transparent 40%,rgba(255,246,214,.85) 50%,transparent 60%) no-repeat;background-size:250% 100%;-webkit-mask:url(/naga-emas.webp) center/100% 100% no-repeat;mask:url(/naga-emas.webp) center/100% 100% no-repeat;mix-blend-mode:screen;animation:sweep 6.5s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-6px,-8px) rotate(-.6deg)}}
 @keyframes sweep{0%,55%{background-position:140% 0}100%{background-position:-40% 0}}
 @media (prefers-reduced-motion:reduce){.dragon,.shine{animation:none}.shine{display:none}}
@@ -82,7 +82,7 @@ footer{position:relative;z-index:1;margin-top:18px;font-size:12px;color:rgba(255
 <body>
 <main class="page">
   <div class="dragon" aria-hidden="true">
-    <img src="/assets/naga-emas.webp" alt="" width="1071" height="562" fetchpriority="high">
+    <img src="/naga-emas.webp" alt="" width="1071" height="562" fetchpriority="high">
     <div class="shine"></div>
   </div>
 
@@ -108,7 +108,7 @@ footer{position:relative;z-index:1;margin-top:18px;font-size:12px;color:rgba(255
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#55625b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
     </a>
 
-    <a class="card dark" href="/skor/">
+    <a class="card dark" href="/skor">
       <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2.5" width="16" height="19" rx="2.5"/><path d="M8 7h8M8 11.5h2M14 11.5h2M8 16h2M14 16h2"/></svg></span>
       <span class="tx">
         <span class="t">Hitung skor</span>
@@ -118,7 +118,7 @@ footer{position:relative;z-index:1;margin-top:18px;font-size:12px;color:rgba(255
     </a>
 
     <div class="links">
-      <a href="/panduan/">Panduan aturan</a>
+      <a href="/panduan">Panduan aturan</a>
       <a id="wa" href="#">WhatsApp</a>
       <a id="ig" href="#">Instagram</a>
     </div>
@@ -128,8 +128,8 @@ footer{position:relative;z-index:1;margin-top:18px;font-size:12px;color:rgba(255
 </main>
 <script>
   // ==== ATUR DI SINI ====
-  var WA_NUMBER = '62XXXXXXXXXX';            // nomor WhatsApp kafe, format 62..., tanpa + atau spasi
-  var INSTAGRAM = 'https://instagram.com/';  // link Instagram kafe
+  var WA_NUMBER = '6282375836067';            // nomor WhatsApp kafe, format 62..., tanpa + atau spasi
+  var INSTAGRAM = 'https://www.instagram.com/mahjongjogja?psln=MTNybnRpZHZ6dHBneQ==';  // link Instagram kafe
   // ======================
   var wa = 'https://wa.me/' + WA_NUMBER;
   document.getElementById('booking').href = wa + '?text=' + encodeURIComponent('Halo Jade Mahjong, saya mau booking meja.\nTanggal: \nJam mulai: \nDurasi (jam): \nNama: ');
