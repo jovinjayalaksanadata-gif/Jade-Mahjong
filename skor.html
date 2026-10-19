@@ -204,7 +204,8 @@ summary{cursor:pointer;font-weight:600;color:var(--jade-d)}
 .room .join input{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;text-transform:uppercase;letter-spacing:.1em;background:var(--card);color:var(--ink)}
 .room .info{flex:1 1 200px}
 body.viewing section.entry,body.viewing #undo,body.viewing #newgame{display:none}
-body.viewing .variants,body.viewing .board input,body.viewing .board-foot select,body.viewing .pill.mini{pointer-events:none}
+body.viewing .variants{pointer-events:none}
+.seat-name{font:600 15px var(--body);color:var(--ink);padding:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 body.viewing .variants .pill:not([aria-pressed="true"]){opacity:.4}
 </style>
 <script>(() => {
@@ -257,6 +258,7 @@ const save = () => {
 
 const fmt = n => (Math.round(n * 100) / 100).toLocaleString('id-ID');
 const sgn = n => (n > 0 ? '+' : '') + fmt(n);
+const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name = i => S.names[i] || ('Pemain ' + (i + 1));
 const up100 = x => Math.ceil(x / 100) * 100;
 const $ = id => document.getElementById(id);
@@ -548,23 +550,32 @@ function renderVariants() {
   $('vtitle').textContent = VARIANTS[S.variant].name;
 }
 function renderBoard() {
+  const ro = viewing(); // penonton room: tampilkan sebagai teks, bukan isian
   const t = totals(), start = S.variant === 'riichi' ? S.set.riichi.start : 0;
   $('board').innerHTML = [0,1,2,3].map(i => {
     const diff = t[i] - start;
     return `<div class="card seat${i === S.dealer ? ' dealer' : ''}">
       ${i === S.dealer ? '<span class="badge">Dealer</span>' : ''}
       <div class="seat-top"><span class="wind" title="Angin kursi">${WINDS[(i - S.dealer + 4) % 4]}</span>
-      <input id="name${i}" data-name="${i}" value="${S.names[i].replace(/"/g, '&quot;')}" aria-label="Nama pemain ${i + 1}" maxlength="18"></div>
+      ${ro ? `<span class="seat-name">${esc(name(i))}</span>` : `<input id="name${i}" data-name="${i}" value="${S.names[i].replace(/"/g, '&quot;')}" aria-label="Nama pemain ${i + 1}" maxlength="18">`}</div>
       <div class="total num ${diff > 0 ? 'pos' : diff < 0 ? 'neg' : ''}">${fmt(t[i])}</div>
-      ${S.variant === 'riichi' ? `<button class="pill mini" data-riichi="${i}">+ Riichi (setor 1.000)</button>` : ''}
+      ${S.variant === 'riichi' && !ro ? `<button class="pill mini" data-riichi="${i}">+ Riichi (setor 1.000)</button>` : ''}
     </div>`;
   }).join('');
   const parts = [];
+  if (ro) {
+    parts.push(`<span>Dealer: <b>${esc(name(S.dealer))}</b></span>`, `<span>Angin ronde: <b>${WINDS[S.round]} ${WNAME[S.round]}</b></span>`);
+    if (TILE_MODE.includes(S.variant)) {
+      const u = VARIANTS[S.variant].unit, m = S.set.minWin[S.variant] || 0, lo = S.variant === 'sg' ? 1 : 0;
+      parts.push(`<span>Mode: <b>${m <= lo ? 'Santai' : 'Kompetitif, min. ' + m + ' ' + u}</b></span>`);
+    }
+  } else {
   parts.push(`<label>Dealer: <select id="dealersel">${[0,1,2,3].map(i => `<option value="${i}"${i === S.dealer ? ' selected' : ''}>${name(i)}</option>`).join('')}</select></label>`);
   parts.push(`<label>Angin ronde: <select id="roundsel">${[0,1,2,3].map(i => `<option value="${i}"${i === S.round ? ' selected' : ''}>${WINDS[i]} ${WNAME[i]}</option>`).join('')}</select></label>`);
   if (TILE_MODE.includes(S.variant)) {
     const u = VARIANTS[S.variant].unit, m = S.set.minWin[S.variant] || 0, lo = S.variant === 'sg' ? 1 : 0;
     parts.push(`<label>Mode: <select id="minsel">${[0,1,2,3,4,5].filter(x => x >= lo).map(x => `<option value="${x}"${x === m ? ' selected' : ''}>${x === lo ? 'Santai' + (lo ? ' (min. 1 ' + u + ')' : ' (tanpa minimum)') : 'Kompetitif: min. ' + x + ' ' + u}</option>`).join('')}</select></label>`);
+  }
   }
   if (['hk','riichi','tw'].includes(S.variant)) parts.push(`<span>Dealer bertahan: <b class="num">${S.streak}×</b>${S.variant === 'riichi' ? ' (penanda)' : S.variant === 'tw' ? ` → bonus ${1 + 2 * S.streak} tai` : ''}</span>`);
   if (S.variant === 'riichi') parts.push(`<span>Tongkat Riichi di meja: <b class="num">${fmt(S.pot)}</b></span>`);
