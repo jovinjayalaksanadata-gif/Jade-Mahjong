@@ -1040,7 +1040,7 @@ const svgImg = code => new Promise(res => {
   im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(TILES[code].replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="328" '));
 });
 function seeded(n) { let s = n; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
-function fitFont(ctx, text, weight, family, max, width) { let px = max; do { ctx.font = `${weight} ${px}px ${family}`; px -= 4; } while (ctx.measureText(text).width > width && px > 40); return px + 4; }
+function fitFont(ctx, text, weight, family, max, width, min = 40) { let px = max; do { ctx.font = `${weight} ${px}px ${family}`; px -= 2; } while (ctx.measureText(text).width > width && px >= min); return px + 2; }
 function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 
 // Fluent Emoji (c) Microsoft Corporation, MIT License
@@ -1161,13 +1161,106 @@ async function drawCard(h, idx) {
   return c;
 }
 
+
+/* poster-style card on the painted background (shifu-bg.jpg); falls back to drawCard */
+let bgPromise = null;
+const loadBg = () => bgPromise || (bgPromise = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => { bgPromise = null; res(null); }; im.src = 'shifu-bg.jpg'; }));
+function brackets(x, x0, y0, x1, y1, col) {
+  x.strokeStyle = col; x.lineWidth = 2;
+  [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]].forEach(([cx, cy, sx, sy]) => { x.strokeRect(Math.min(cx, cx + sx * 12) - 4 * sx * 0, Math.min(cy, cy + sy * 12), 12, 12); });
+}
+async function drawCardArt(h, idx, bg) {
+  const s = h.share, W = 1080, H = 1920, OY = 150;
+  const DISP = '"Cormorant Garamond", Georgia, serif', BODY = '"IBM Plex Sans", system-ui, sans-serif';
+  try { await Promise.all([document.fonts.load(`700 80px ${DISP}`), document.fonts.load(`600 40px ${DISP}`), document.fonts.load(`500 32px ${BODY}`), document.fonts.load(`600 36px ${BODY}`), document.fonts.load(`700 50px ${BODY}`), document.fonts.load(`italic 500 28px ${BODY}`)]); } catch (e) {}
+  const upto = S.hist.slice(0, idx + 1), start = s.v === 'riichi' ? S.set.riichi.start : 0;
+  const tot = [0, 1, 2, 3].map(i => start + upto.reduce((a, q) => a + (q.d ? q.d[i] : 0), 0));
+  const names = s.names || [0, 1, 2, 3].map(name), w = s.w ?? names.indexOf(s.nm);
+  const mine = upto.filter(q => q.type === 'win' && q.share && (q.share.w ?? q.share.names?.indexOf(q.share.nm)) === w);
+  const best = mine.slice().sort((p, q) => (q.share.num || 0) - (p.share.num || 0) || (q.share.pts || 0) - (p.share.pts || 0))[0] || h, bs = best.share || s;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const IV = '#f6efe0', GOLD = '#e2b44b', GOLD2 = '#f3d27e', MUT = 'rgba(246,239,224,.62)';
+  const band = x.createLinearGradient(0, 0, 0, H); band.addColorStop(0, '#03130d'); band.addColorStop(.5, '#0b2d22'); band.addColorStop(1, '#03130d');
+  x.fillStyle = band; x.fillRect(0, 0, W, H);
+  x.drawImage(bg, 0, OY, 1080, 1620);
+  const goldGrad = (y0, y1) => { const g = x.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, '#fff1c2'); g.addColorStop(.55, '#f0cd78'); g.addColorStop(1, '#c8962f'); return g; };
+  x.textBaseline = 'alphabetic';
+  // name with dashes
+  const nf = fitFont(x, s.nm, 700, DISP, 82, 440, 36); x.font = `700 ${nf}px ${DISP}`; x.textAlign = 'center';
+  const ny = OY + 643, nw = x.measureText(s.nm).width;
+  x.save(); x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 10; x.shadowOffsetY = 3; x.fillStyle = goldGrad(ny - nf * .75, ny); x.fillText(s.nm, 540, ny); x.restore();
+  x.strokeStyle = GOLD; x.lineWidth = 3; x.lineCap = 'round';
+  [[-1], [1]].forEach(([sd]) => { const a = 540 + sd * (nw / 2 + 22), b = 540 + sd * (nw / 2 + 88); x.beginPath(); x.moveTo(a, ny - nf * .3); x.lineTo(b, ny - nf * .3); x.stroke(); });
+  // meta line with a little pin
+  const meta = `Mahjong ${VARIANTS[s.v].name}  •  menang ${mine.length || 1}×  •  ${(s.pts > 0 ? '+' : '') + fmt(s.pts)} poin ronde ini`;
+  const mf = fitFont(x, meta, 600, DISP, 40, 760, 22); x.font = `600 ${mf}px ${DISP}`;
+  const my = OY + 787, mw = x.measureText(meta).width, px0 = 540 - mw / 2 - 26;
+  x.fillStyle = 'rgba(246,239,224,.88)'; x.fillText(meta, 540 + 16, my);
+  x.fillStyle = GOLD; x.beginPath(); x.arc(px0, my - 18, 11, Math.PI, 0); x.lineTo(px0, my + 2); x.closePath(); x.fill(); x.fillStyle = '#0b2d22'; x.beginPath(); x.arc(px0, my - 18, 4.5, 0, Math.PI * 2); x.fill();
+  // standings
+  const rows = [0, 1, 2, 3].map(i => ({i, nm: names[i], t: tot[i]})).sort((p, q) => q.t - p.t);
+  const teases = ['', 'nyaris…', 'coba lagi', 'traktir dong'];
+  const L = 135, R = 945; let y = OY + 835;
+  rows.forEach((r, k) => {
+    if (r.i === w) {
+      const hg = x.createLinearGradient(L, 0, R, 0); hg.addColorStop(0, 'rgba(226,180,75,.20)'); hg.addColorStop(.5, 'rgba(226,180,75,.08)'); hg.addColorStop(1, 'rgba(226,180,75,.20)');
+      x.fillStyle = hg; rrect(x, L, y, R - L, 82, 10); x.fill(); x.strokeStyle = GOLD; x.lineWidth = 2; x.stroke(); brackets(x, L - 6, y - 6, R + 6, y + 88, 'rgba(226,180,75,.8)');
+      if (crownImg) x.drawImage(crownImg, L + 26, y + 6, 70, 70);
+      x.textAlign = 'left'; const f1 = fitFont(x, r.nm, 700, BODY, 50, 480, 26); x.font = `700 ${f1}px ${BODY}`; x.fillStyle = IV; x.fillText(r.nm, L + 122, y + 58);
+      x.textAlign = 'right'; x.font = `700 58px ${BODY}`; x.fillStyle = goldGrad(y + 14, y + 62); x.fillText(fmt(r.t), R - 26, y + 62);
+      y += 82 + 14;
+    } else {
+      x.textAlign = 'center'; x.font = `700 38px ${DISP}`; x.fillStyle = MUT; x.fillText(String(k + 1), L + 60, y + 40);
+      x.textAlign = 'left'; const f2 = fitFont(x, r.nm, 600, BODY, 36, 300, 22); x.font = `600 ${f2}px ${BODY}`; x.fillStyle = IV; x.fillText(r.nm, L + 110, y + 40);
+      const w2 = x.measureText(r.nm).width; x.font = `italic 500 28px ${BODY}`; x.fillStyle = 'rgba(246,239,224,.55)'; x.fillText(teases[Math.min(k, 3)], L + 132 + w2, y + 39);
+      x.textAlign = 'right'; x.font = `600 38px ${BODY}`; x.fillStyle = IV; x.fillText(fmt(r.t), R - 40, y + 41);
+      if (k < 3) { x.fillStyle = 'rgba(226,180,75,.14)'; x.fillRect(L + 20, y + 56, R - L - 40, 1.5); }
+      y += 58;
+    }
+  });
+  const dv = x.createLinearGradient(L, 0, R, 0); dv.addColorStop(0, 'rgba(226,180,75,0)'); dv.addColorStop(.5, 'rgba(226,180,75,.75)'); dv.addColorStop(1, 'rgba(226,180,75,0)');
+  x.fillStyle = dv; x.fillRect(L, OY + 1114, R - L, 2);
+  // best hand
+  x.textAlign = 'left'; x.font = `500 32px ${BODY}`; x.fillStyle = MUT; x.fillText('Tangan terbaik', L + 30, OY + 1160);
+  x.textAlign = 'right'; x.font = `700 40px ${BODY}`; x.fillStyle = goldGrad(OY + 1127, OY + 1162); x.fillText(bs.val, R - 30, OY + 1162);
+  x.textAlign = 'center';
+  if (bs.pats && bs.pats.length) {
+    x.font = `600 33px ${BODY}`; const sep = '  ◆  '; let line = '';
+    for (const p of bs.pats) { const tl = line ? line + sep + p : p; if (x.measureText(tl).width > 790) break; line = tl; }
+    x.fillStyle = IV; x.fillText(line, 540, OY + 1201);
+  }
+  const bx0 = L, by0 = OY + 1218, bx1 = R, by1 = OY + 1446;
+  x.strokeStyle = 'rgba(226,180,75,.85)'; x.lineWidth = 2; rrect(x, bx0, by0, bx1 - bx0, by1 - by0, 8); x.stroke(); brackets(x, bx0 - 6, by0 - 6, bx1 + 6, by1 + 6, 'rgba(226,180,75,.8)');
+  if (best.tiles && best.tiles.length) {
+    const groups = best.tiles, total = groups.reduce((a, gr) => a + gr.length, 0);
+    let row1 = [], row2 = [], acc = 0; groups.forEach(gr => { (acc + gr.length / 2 <= total / 2 ? row1 : row2).push(gr); acc += gr.length; });
+    if (!row1.length) row1 = row2.splice(0, Math.ceil(row2.length / 2));
+    const trs = [row1, row2].filter(r => r.length), gap = 6, ggap = 22;
+    const need = r => r.reduce((a, gr) => a + gr.length, 0), gc = r => r.length;
+    const availH = by1 - by0 - 36, tw = Math.min(72, (availH - (trs.length - 1) * 12) / trs.length * 60 / 82, ...trs.map(r => (760 - (need(r) - gc(r)) * gap - (gc(r) - 1) * ggap) / need(r)));
+    const th = tw * 82 / 60, blockH = trs.length * th + (trs.length - 1) * 12;
+    const imgs = {}; await Promise.all([...new Set(groups.flat())].map(async cd => imgs[cd] = await svgImg(cd)));
+    trs.forEach((r, ri) => {
+      const rw = need(r) * tw + (need(r) - gc(r)) * gap + (gc(r) - 1) * ggap; let tx = 540 - rw / 2; const ty = (by0 + by1) / 2 - blockH / 2 + ri * (th + 12);
+      r.forEach(gr => { gr.forEach((cd, i) => { x.save(); x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 10; x.shadowOffsetY = 5; if (imgs[cd]) x.drawImage(imgs[cd], tx, ty, tw, th); x.restore(); tx += tw + (i < gr.length - 1 ? gap : 0); }); tx += ggap; });
+    });
+  } else {
+    x.font = `700 96px ${DISP}`; x.fillStyle = goldGrad(by0 + 60, by0 + 150); x.fillText(bs.val, 540, (by0 + by1) / 2 + 32);
+  }
+  // date
+  x.font = `600 31px ${DISP}`; x.fillStyle = 'rgba(246,239,224,.72)';
+  x.fillText(new Date(s.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) + '  •  Jade Mahjong Jogja', 540, OY + 1562);
+  return c;
+}
+let crownImg = null;
 async function openShare(idx) {
   const h = S.hist[idx]; if (!h || !h.share) return;
   let box = $('sharebox');
   if (!box) { box = document.createElement('div'); box.id = 'sharebox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Bagikan kemenangan'); document.body.appendChild(box); }
   box.innerHTML = `<div class="sh-card"><p class="sh-t">Rayakan kemenangan ${esc(h.share.nm)}</p><div class="sh-prev"><span class="sh-load">Membuat gambar…</span></div><div class="sh-act"></div></div>`;
   box.hidden = false; document.body.style.overflow = 'hidden';
-  const c = await drawCard(h, idx);
+  const bg = await loadBg(); if (!crownImg) crownImg = await emojiImg('crown');
+  const c = bg ? await drawCardArt(h, idx, bg) : await drawCard(h, idx);
   shareBlob = await new Promise(r => c.toBlob(r, 'image/png'));
   if (shareURL) URL.revokeObjectURL(shareURL); shareURL = URL.createObjectURL(shareBlob);
   const file = new File([shareBlob], 'jade-mahjong-juara.png', {type: 'image/png'});
