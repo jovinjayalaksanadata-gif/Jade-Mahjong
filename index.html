@@ -3,28 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Jade Mahjong – Kafe Mahjong 24 Jam</title>
+<title>Jade Mahjong – Kafe Mahjong 24 Jam di Jogja</title>
 <meta name="description" content="Jade Mahjong Jogja: kafe mahjong buka 24 jam di Gamping, Sleman. 2 meja otomatis. Sewa meja Rp40.000/jam, paket 3 jam Rp100.000. Penghitung skor otomatis dan panduan aturan mahjong.">
-<meta name="theme-color" content="#0b3428">
+<meta name="theme-color" content="#e6f6ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f2219" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="canonical" href="https://mahjongjogja.com/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Jade Mahjong – Kafe Mahjong 24 Jam">
 <meta property="og:description" content="Pesan meja, main, hitung skor. Rp40.000/jam, paket 3 jam Rp100.000.">
 <meta property="og:url" content="https://mahjongjogja.com/">
 <meta property="og:image" content="https://mahjongjogja.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" as="image" href="/naga-emas.webp">
+<link rel="preload" as="image" href="/naga-wave.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,600;0,700;1,600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem('jade-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "EntertainmentBusiness",
   "name": "Jade Mahjong",
   "url": "https://mahjongjogja.com/",
-  "logo": "https://mahjongjogja.com/favicon.svg",
+  "logo": "https://mahjongjogja.com/apple-touch-icon.png",
   "image": "https://mahjongjogja.com/og.jpg",
   "description": "Kafe mahjong buka 24 jam dengan sewa meja per jam, penghitung skor, dan panduan aturan.",
   "priceRange": "Rp40.000 – Rp100.000",
@@ -48,105 +53,176 @@
 }
 </script>
 <style>
-:root{--jade:#0b3428;--gold:#e2b44b;--gold-2:#f0cd78;--ivory:#f4f2ea;--ink:#15211c;--muted:#55625b}
+:root{
+  --bg:#e6f6ec; --card:#fff; --ink:#1d3a2f; --mut:#55705f; --out:#1d3a2f; --dot:rgba(29,58,47,.09);
+  --jade:#2bb673; --jade-d:#155c3f; --jade-soft:#d7f4e3; --sel:#ffd23f; --on-sel:#1d3a2f; --pink:#ff8fa3;
+  --disp:'Fredoka','Nunito',system-ui,sans-serif; --body:'Nunito',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f2219; --card:#18342a; --ink:#eef7f0; --mut:#a9c3b4; --out:#03100a; --dot:rgba(255,255,255,.05);
+  --jade:#3fd08a; --jade-d:#9ff0c6; --jade-soft:#1f4535; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f2219; --card:#18342a; --ink:#eef7f0; --mut:#a9c3b4; --out:#03100a; --dot:rgba(255,255,255,.05);
+  --jade:#3fd08a; --jade-d:#9ff0c6; --jade-soft:#1f4535; color-scheme:dark}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--jade);color:#fff}
-body{font-family:'Montserrat',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-a{color:var(--gold);text-decoration:none;transition:color .2s ease,transform .2s ease,background-color .2s ease,border-color .2s ease}
-a:hover{color:var(--gold-2)}
-a:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:12px}
-.page{position:relative;max-width:440px;min-height:100vh;min-height:100svh;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px max(28px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
-.brand{position:relative;z-index:1;display:flex;align-items:center;gap:10px}
-.seal{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Cormorant',serif;font-weight:700;font-size:20px}
-.brand span{font-family:'Cormorant',serif;font-weight:700;font-size:20px;letter-spacing:.18em}
-.dragon{position:absolute;left:-30px;top:78px;width:calc(100% + 36px);aspect-ratio:1071/562;pointer-events:none;animation:float 8s ease-in-out infinite;will-change:transform}
-.dragon img{width:100%;height:100%;display:block}
-.shine{position:absolute;inset:0;background:linear-gradient(100deg,transparent 40%,rgba(255,246,214,.85) 50%,transparent 60%) no-repeat;background-size:250% 100%;-webkit-mask:url(/naga-emas.webp) center/100% 100% no-repeat;mask:url(/naga-emas.webp) center/100% 100% no-repeat;mix-blend-mode:screen;animation:sweep 6.5s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-6px,-8px) rotate(-.6deg)}}
-@keyframes sweep{0%,55%{background-position:140% 0}100%{background-position:-40% 0}}
-@media (prefers-reduced-motion:reduce){.dragon,.shine{animation:none}.shine{display:none}}
-.hero{position:relative;z-index:1;margin-top:clamp(250px,68vw,290px);display:flex;flex-direction:column;gap:10px}
-.kicker{font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--gold)}
-h1{margin:0;font-family:'Cormorant',serif;font-weight:600;font-size:42px;line-height:1.02}
-h1 em{color:#e9c46a}
-.hero p{margin:0;font-size:14px;line-height:1.55;color:rgba(255,255,255,.78)}
-.actions{position:relative;z-index:1;margin-top:auto;padding-top:28px;display:flex;flex-direction:column;gap:10px}
-.card{border-radius:20px;padding:16px;display:flex;align-items:center;gap:14px}
-.card:hover{transform:translateY(-2px)}
-.card:active{transform:translateY(0) scale(.99)}
-.card .ic{flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center}
-.card .tx{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-.card .t{font-family:'Cormorant',serif;font-weight:700;font-size:22px;line-height:1.1}
-.card .s{font-size:13px}
-.card.light{background:var(--ivory);color:var(--ink)}
-.card.light .ic{background:var(--jade);color:var(--gold)}
-.card.light .s{color:var(--muted)}
-.card.light .s.ok{color:#146c45;font-weight:600}
-.card.dark{background:rgba(255,255,255,.06);border:1px solid rgba(226,180,75,.35);color:#fff}
-.card.dark .ic{background:var(--gold);color:var(--jade)}
-.card.dark .s{color:rgba(255,255,255,.78)}
-.links{display:flex;justify-content:space-between;padding:4px 4px 0;font-size:14px;font-weight:600}
-.links a{padding:10px 0}
-footer{position:relative;z-index:1;margin-top:18px;font-size:12px;color:rgba(255,255,255,.55);text-align:center}
+html,body{margin:0}
+body{background-color:var(--bg);background-image:radial-gradient(var(--dot) 2.2px,transparent 2.6px);background-size:22px 22px;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100svh}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--sel);outline-offset:3px;border-radius:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+
+.page{max-width:1040px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:46px;height:46px;flex:none;filter:drop-shadow(0 3px 0 rgba(0,0,0,.12))}
+.brand b{font-family:var(--disp);font-weight:700;font-size:21px;line-height:1;color:var(--jade-d)}
+.brand small{display:block;font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-top:3px}
+.theme{width:44px;height:44px;border-radius:14px;border:2.5px solid var(--out);background:var(--card);box-shadow:0 3px 0 var(--out);display:grid;place-items:center;transition:transform .12s ease,box-shadow .12s ease}
+.theme:active{transform:translateY(3px);box-shadow:0 0 0 var(--out)}
+.theme svg{width:22px;height:22px}
+.theme .moon{display:none}
+:root[data-theme="dark"] .theme .sun{display:none}
+:root[data-theme="dark"] .theme .moon{display:block}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .theme .sun{display:none}:root:not([data-theme="light"]) .theme .moon{display:block}}
+
+.hero{display:grid;gap:6px;margin-top:14px}
+.stage{position:relative;display:flex;justify-content:center;padding-top:10px}
+.stage img{width:min(62vw,260px);height:auto;animation:bob 3.2s ease-in-out infinite;transform-origin:50% 90%}
+.bubble{position:absolute;top:0;right:max(0px,calc(50% - 200px));background:var(--card);border:2.5px solid var(--out);border-radius:18px;padding:8px 12px;font-family:var(--disp);font-weight:600;font-size:15px;line-height:1.2;box-shadow:0 3px 0 var(--out);max-width:150px;transform:rotate(3deg)}
+.bubble::after{content:"";position:absolute;left:18px;bottom:-11px;width:16px;height:16px;background:var(--card);border-right:2.5px solid var(--out);border-bottom:2.5px solid var(--out);transform:rotate(45deg) skew(8deg,8deg);border-radius:0 0 4px 0}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(-2deg)}}
+@media (prefers-reduced-motion:reduce){.stage img{animation:none}}
+.chip{justify-self:start;display:inline-flex;align-items:center;gap:6px;background:var(--sel);color:var(--on-sel);border:2.5px solid var(--out);border-radius:99px;padding:4px 12px;font-weight:800;font-size:13px;box-shadow:0 2px 0 var(--out);transform:rotate(-2deg)}
+.chip i{width:9px;height:9px;border-radius:50%;background:#13895a;box-shadow:0 0 0 2px var(--on-sel)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(36px,10vw,54px);line-height:1;margin:8px 0 4px;letter-spacing:-.01em;text-wrap:balance}
+h1 .hl{color:var(--jade);-webkit-text-stroke:0}
+.lead{margin:0;font-size:16px;color:var(--mut);font-weight:600;max-width:34ch}
+
+.actions{display:grid;gap:14px;margin-top:22px}
+.card{display:flex;align-items:center;gap:14px;background:var(--card);border:2.5px solid var(--out);border-radius:22px;padding:14px 16px;box-shadow:0 5px 0 var(--out);transition:transform .12s ease,box-shadow .12s ease}
+.card:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--out)}
+.card:active{transform:translateY(5px);box-shadow:0 0 0 var(--out)}
+.card .ic{flex:none;width:52px;height:52px;border-radius:16px;border:2.5px solid var(--out);display:grid;place-items:center;background:var(--jade-soft);color:var(--jade-d)}
+.card .ic img{width:46px;height:46px}
+.card .tx{flex:1;min-width:0;display:grid;gap:1px}
+.card .t{font-family:var(--disp);font-weight:700;font-size:22px;line-height:1.1}
+.card .s{font-size:14px;font-weight:600;color:var(--mut)}
+.card .go{flex:none;width:34px;height:34px;border-radius:50%;border:2.5px solid var(--out);display:grid;place-items:center;background:var(--card)}
+.card.main{background:var(--sel);color:var(--on-sel)}
+.card.main .s{color:#4a4120}
+.card.main .ic{background:#fff;color:var(--on-sel)}
+.card.main .go{background:#fff;color:var(--on-sel)}
+.card .ok{color:#0e6b45;font-weight:800}
+
+.info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:22px}
+.tag{background:var(--card);border:2.5px solid var(--out);border-radius:18px;padding:10px 12px;box-shadow:0 3px 0 var(--out);display:grid;gap:2px;min-width:0}
+.tag b{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1.1}
+.tag span{font-size:13px;font-weight:600;color:var(--mut)}
+.tag.wide{grid-column:1/-1}
+a.tag{transition:transform .12s ease,box-shadow .12s ease}
+a.tag:active{transform:translateY(3px);box-shadow:0 0 0 var(--out)}
+a.tag u{text-decoration:none;color:var(--jade-d);font-weight:800}
+
+.social{display:flex;gap:10px;margin-top:14px}
+.social a{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:16px;border:2.5px solid var(--out);background:var(--card);box-shadow:0 3px 0 var(--out);font-weight:800;transition:transform .12s ease,box-shadow .12s ease}
+.social a:active{transform:translateY(3px);box-shadow:0 0 0 var(--out)}
+.social svg{width:20px;height:20px}
+
+footer{margin-top:26px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:var(--mut);text-align:center}
+footer img{width:30px;height:30px;flex:none}
+
+@media (min-width:820px){
+  .page{padding-top:28px}
+  .layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px 44px;align-items:center;margin-top:18px}
+  .hero{grid-row:1/3;margin:0}
+  .stage img{width:300px}
+  .bubble{right:6%}
+  .actions,.info{margin-top:0}
+  .info{align-self:start}
+}
 </style>
 </head>
 <body>
 <main class="page">
-  <div class="dragon" aria-hidden="true">
-    <img src="/naga-emas.webp" alt="" width="1071" height="562" fetchpriority="high">
-    <div class="shine"></div>
+  <div class="top">
+    <a class="brand" href="/" aria-label="Jade Mahjong, beranda">
+      <img src="/favicon.svg" alt="" width="46" height="46">
+      <span><b>Jade Mahjong</b><small>Kafe mahjong · Jogja</small></span>
+    </a>
+    <button class="theme" id="theme" type="button" aria-label="Ganti tampilan terang atau gelap" title="Terang / gelap">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
   </div>
 
-  <div class="brand">
-    <div class="seal" aria-hidden="true">翠</div>
-    <span>JADE MAHJONG</span>
-  </div>
+  <div class="layout">
+    <section class="hero">
+      <div class="stage">
+        <img src="/naga-wave.svg" alt="Si Naga Jade, maskot Jade Mahjong, melambai" width="230" height="242">
+        <span class="bubble">Halo! Main yuk, kami buka terus!</span>
+      </div>
+      <span class="chip"><i></i>Buka 24 jam</span>
+      <h1>Pesan meja, <span class="hl">main</span>, hitung skor.</h1>
+      <p class="lead">2 meja mahjong otomatis di Gamping, Sleman. Semua bisa diurus dari HP.</p>
+    </section>
 
-  <section class="hero">
-    <span class="kicker">BUKA 24 JAM</span>
-    <h1>Pesan meja,<br><em>main</em>, hitung skor.</h1>
-    <p>Semua dari satu tempat, langsung dari HP.</p>
-  </section>
+    <nav class="actions" aria-label="Menu utama">
+      <a class="card main" id="booking" href="https://ayo.co.id/v/jade-mahjong-jogja" target="_blank" rel="noopener">
+        <span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9.5h18M8 2.5v3.5M16 2.5v3.5M8 14h3"/></svg></span>
+        <span class="tx">
+          <span class="t">Booking meja</span>
+          <span class="s">Lihat jadwal kosong &amp; bayar di AYO</span>
+        </span>
+        <span class="go" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
-  <nav class="actions" aria-label="Menu utama">
-    <a class="card light" id="booking" href="https://ayo.co.id/v/jade-mahjong-jogja" target="_blank" rel="noopener">
-      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v3.5M16 2.5v3.5"/></svg></span>
-      <span class="tx">
-        <span class="t">Booking meja</span>
-        <span class="s">Rp40rb/jam · paket 3 jam Rp100rb</span>
-        <span class="s ok">Lihat jadwal kosong &amp; bayar di AYO</span>
-      </span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#55625b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-    </a>
+      <a class="card" href="/skor">
+        <span class="ic"><img src="/naga-tile.svg" alt="" width="46" height="46"></span>
+        <span class="tx">
+          <span class="t">Hitung skor</span>
+          <span class="s">Foto atau pilih tiles, poin dihitung otomatis</span>
+        </span>
+        <span class="go" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
-    <a class="card dark" href="/skor">
-      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2.5" width="16" height="19" rx="2.5"/><path d="M8 7h8M8 11.5h2M14 11.5h2M8 16h2M14 16h2"/></svg></span>
-      <span class="tx">
-        <span class="t">Hitung skor</span>
-        <span class="s">Masukkan tiles, poin dihitung otomatis</span>
-      </span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-    </a>
+      <a class="card" href="/panduan">
+        <span class="ic"><img src="/naga-think.svg" alt="" width="46" height="46"></span>
+        <span class="tx">
+          <span class="t">Panduan aturan</span>
+          <span class="s">Hong Kong, Riichi, Taiwan, American, dll</span>
+        </span>
+        <span class="go" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
+    </nav>
 
-    <div class="links">
-      <a href="/panduan">Panduan aturan</a>
-      <a id="wa" href="#">WhatsApp</a>
-      <a id="ig" href="#">Instagram</a>
+    <div>
+      <div class="info">
+        <div class="tag"><b>Rp40rb</b><span>per jam</span></div>
+        <div class="tag"><b>Rp100rb</b><span>paket 3 jam</span></div>
+        <a class="tag wide" href="https://www.google.com/maps/search/?api=1&amp;query=Jade+Mahjong+Jl.+Kabupaten+No.92+Nogotirto+Gamping+Sleman" target="_blank" rel="noopener">
+          <b>Jl. Kabupaten No.92</b><span>Nogotirto, Gamping, Sleman · <u>Buka di Maps</u></span>
+        </a>
+      </div>
+      <div class="social">
+        <a id="wa" href="https://wa.me/6282375836067" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.8z"/><path d="M9 9.5c.3 2 2 3.8 4.5 4.5l1-1.2 1.8.8c-.2 1-1 1.6-2 1.6-3.2 0-6.4-3-6.4-6.3 0-1 .7-1.8 1.6-2l.8 1.8z"/></svg>WhatsApp</a>
+        <a id="ig" href="https://www.instagram.com/mahjongjogja?psln=MTNybnRpZHZ6dHBneQ==" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r=".6" fill="currentColor"/></svg>Instagram</a>
+      </div>
     </div>
-  </nav>
+  </div>
 
-  <footer>© Jade Mahjong · Poin hanya untuk skor permainan, bukan taruhan.</footer>
+  <footer><img src="/favicon.svg" alt="" width="30" height="30">Poin hanya untuk skor permainan, bukan taruhan.</footer>
 </main>
 <script>
-  // ==== ATUR DI SINI ====
-  var AYO_URL = 'https://ayo.co.id/v/jade-mahjong-jogja'; // halaman booking di AYO (dipakai tombol Booking meja di atas)
-  var WA_NUMBER = '6282375836067';            // nomor WhatsApp kafe, format 62..., tanpa + atau spasi
-  var INSTAGRAM = 'https://www.instagram.com/mahjongjogja?psln=MTNybnRpZHZ6dHBneQ==';  // link Instagram kafe
-  // ======================
-  var wa = 'https://wa.me/' + WA_NUMBER;
-  document.getElementById('booking').href = AYO_URL;
-  document.getElementById('wa').href = wa;
-  document.getElementById('ig').href = INSTAGRAM;
+(function(){
+  var root=document.documentElement, btn=document.getElementById('theme');
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  function isDark(){var t=root.dataset.theme;return t?t==='dark':mq.matches}
+  btn.addEventListener('click',function(){
+    var next=isDark()?'light':'dark';
+    root.dataset.theme=next;
+    try{localStorage.setItem('jade-theme',next)}catch(e){}
+  });
+})();
 </script>
 </body>
 </html>
