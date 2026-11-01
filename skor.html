@@ -364,7 +364,7 @@ function eyes(p) {
   if (p === 'sad')
     return `<ellipse cx="88" cy="100" rx="11" ry="13" fill="${NAGA.ink}"/><ellipse cx="152" cy="100" rx="11" ry="13" fill="${NAGA.ink}"/>
       <circle cx="92" cy="95" r="4" fill="#fff"/><circle cx="156" cy="95" r="4" fill="#fff"/>
-      <path d="M72 84 l20 6 M168 84 l-20 6" fill="none" ${nstk(4)}/>
+      <path d="M72 88 l20 -7 M168 88 l-20 -7" fill="none" ${nstk(4)}/>
       <path d="M78 114 q-4 10 0 14 q5 -4 0 -14z" fill="#7fd0ff" stroke="${NAGA.ink}" stroke-width="2.5"/>`;
   const look = p === 'think' ? 4 : 0;
   return `<ellipse cx="${88 + look}" cy="${98 - look / 2}" rx="13" ry="16" fill="${NAGA.ink}"/><ellipse cx="${152 + look}" cy="${98 - look / 2}" rx="13" ry="16" fill="${NAGA.ink}"/>
