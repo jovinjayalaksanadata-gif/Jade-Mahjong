@@ -16,3 +16,4 @@ Alamat:
   https://mahjongjogja.com           beranda
   https://mahjongjogja.com/skor/     penghitung skor
   https://mahjongjogja.com/panduan/  panduan aturan + PDF
+
